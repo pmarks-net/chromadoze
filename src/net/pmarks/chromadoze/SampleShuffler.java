@@ -24,7 +24,6 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Process;
-import android.util.Log;
 
 class SampleShuffler {
 	public static final int FADE_LEN = 500;
@@ -81,7 +80,7 @@ class SampleShuffler {
 	private static class ChunksPurged extends Exception {
 		private static final long serialVersionUID = -1855423352961625228L;
 	}
-	
+
 	private static class StopThread extends Exception {
 		private static final long serialVersionUID = 2439290876882896774L;
 	}
@@ -199,7 +198,6 @@ class SampleShuffler {
 	// Add a new chunk.  If it clips, discard it and ask for another.
 	private boolean handleChunkNoClip(AudioChunk newChunk) {
 		if (newChunk.getMaxAmplitude() * mGlobalVolumeFactor > CLIP_AMPLITUDE) {
-			Log.i("X", "Dropping clipped chunk.");
 			return false;
 		} else {
 			newChunk.buildPcmData(mGlobalVolumeFactor);
@@ -249,7 +247,6 @@ class SampleShuffler {
 			throw new StopThread();
 		}
 		if (mChunksPurged) {
-			Log.i("X", "Chunks purged!");
 			throw new ChunksPurged();
 		}
 	}

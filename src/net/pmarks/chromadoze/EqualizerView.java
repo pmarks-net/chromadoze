@@ -30,8 +30,6 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 public class EqualizerView extends android.view.View {
-	//public ChromaDoze.FftThread mFftThread;  // FIXME: HACK!
-	
 	// The current value of each bar, [0.0, 1.0]
 	private float mBars[] = new float[SpectrumData.BAND_COUNT];
 	
