@@ -20,22 +20,23 @@ package net.pmarks.chromadoze;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
 public class ChromaDoze extends Activity implements OnClickListener {
+    private static final String START_TEXT = "Start";
+    private static final String STOP_TEXT = "Stop";
+    private static final int MENU_ABOUT = 1;
+
     private EqualizerView mEqualizer;
     private Button mStopButton;
-    
-    private static String START_TEXT = "Start";
-    private static String STOP_TEXT = "Stop";
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i("", "onCreate!");
         setContentView(R.layout.main);
         mEqualizer = (EqualizerView)findViewById(R.id.EqualizerView);
         mStopButton = (Button)findViewById(R.id.StopButton);
@@ -47,7 +48,6 @@ public class ChromaDoze extends Activity implements OnClickListener {
     
 	@Override
 	protected void onPause() {
-		Log.i("", "onPause!");
 		super.onPause();
 		SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
 		pref.clear();
@@ -75,4 +75,24 @@ public class ChromaDoze extends Activity implements OnClickListener {
 			mStopButton.setText(START_TEXT);
 		}
 	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add(0, MENU_ABOUT, 0, "About").setIcon(
+				android.R.drawable.ic_menu_info_details);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    switch (item.getItemId()) {
+	    case MENU_ABOUT:
+	    	AboutDialog dialog = new AboutDialog(this);
+	    	dialog.show();
+	        return true;
+	    }
+	    return false;
+	}
+
+
 }
