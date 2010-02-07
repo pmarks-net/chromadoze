@@ -19,6 +19,8 @@ package net.pmarks.chromadoze;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -41,8 +43,16 @@ public class AboutDialog extends Dialog {
 				dismiss();
 			}
 		});
-		
+
+		PackageInfo pinfo;
+		try {
+			Context context = getContext();
+			pinfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+		} catch (NameNotFoundException e) {
+			throw new RuntimeException("Can't find package?");
+		}
+
 		TextView versionText = (TextView) findViewById(R.id.VersionText);
-		versionText.setText("Version " + getContext().getText(R.string.version));
+		versionText.setText("Version " + pinfo.versionName);
 	}
 }

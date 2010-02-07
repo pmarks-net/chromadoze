@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       android:versionCode="1"
-      android:versionName="@string/version" package="net.pmarks.chromadoze">
+      android:versionName="1.0" package="net.pmarks.chromadoze">
     <application android:label="@string/app_name" android:icon="@drawable/chromadoze_icon">
         <activity android:name=".ChromaDoze"
                   android:label="@string/app_name">
