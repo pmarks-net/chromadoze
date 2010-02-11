@@ -27,10 +27,10 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 
 public class ChromaDoze extends Activity implements OnClickListener {
-    private static final String START_TEXT = "Start";
-    private static final String STOP_TEXT = "Stop";
     private static final int MENU_ABOUT = 1;
 
+    private String mStartText;
+    private String mStopText;
     private EqualizerView mEqualizer;
     private Button mStopButton;
     
@@ -41,6 +41,9 @@ public class ChromaDoze extends Activity implements OnClickListener {
         mEqualizer = (EqualizerView)findViewById(R.id.EqualizerView);
         mStopButton = (Button)findViewById(R.id.StopButton);
         mStopButton.setOnClickListener(this);
+        
+        mStartText = getString(R.string.start_button);
+        mStopText = getString(R.string.stop_button);
         
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
         mEqualizer.loadState(pref);
@@ -61,24 +64,24 @@ public class ChromaDoze extends Activity implements OnClickListener {
 		
 		// Do a soft sync-up of the service state.
 		boolean active = NoiseService.serviceActive;
-		mStopButton.setText(active ? STOP_TEXT : START_TEXT);
+		mStopButton.setText(active ? mStopText : mStartText);
 		mEqualizer.setSendEnabled(active);
 	}
 
 	public void onClick(View v) {
 		// Force the service into its expected state.
-		if (mStopButton.getText().equals(START_TEXT)) {
+		if (mStopButton.getText().equals(mStartText)) {
 			mEqualizer.startSending();
-			mStopButton.setText(STOP_TEXT);
+			mStopButton.setText(mStopText);
 		} else {
 			mEqualizer.stopSending();
-			mStopButton.setText(START_TEXT);
+			mStopButton.setText(mStartText);
 		}
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, MENU_ABOUT, 0, "About").setIcon(
+		menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu)).setIcon(
 				android.R.drawable.ic_menu_info_details);
 		return true;
 	}
