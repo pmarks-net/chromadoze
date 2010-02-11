@@ -87,8 +87,8 @@ public class NoiseService extends Service {
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		n.setLatestEventInfo(
 				getApplicationContext(),
-				"Chroma Doze",
-				"Select to configure noise generation.",
+				getString(R.string.app_name),
+				getString(R.string.select_to_configure),
 				contentIntent);
 		mNotificationManager.notify(NOTIFY_ID, n);
 		mNotificationVisible = true;

@@ -52,7 +52,9 @@ public class AboutDialog extends Dialog {
 			throw new RuntimeException("Can't find package?");
 		}
 
+		// Evaluate the format string in VersionText.
 		TextView versionText = (TextView) findViewById(R.id.VersionText);
-		versionText.setText("Version " + pinfo.versionName);
+		String versionFormat = versionText.getText().toString();
+		versionText.setText(String.format(versionFormat, pinfo.versionName));
 	}
 }
