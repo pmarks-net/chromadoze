@@ -27,75 +27,75 @@ import android.os.IBinder;
 import android.os.PowerManager;
 
 public class NoiseService extends Service {
-	
-	// Hacky way of testing whether the service is active.
-	public static volatile boolean serviceActive = false;
-	
-	private SampleShuffler mSampleShuffler;
-	private SampleGenerator mSampleGenerator;
-	
-	private static final int NOTIFY_ID = 1;
-	private NotificationManager mNotificationManager;
-	private PowerManager.WakeLock mWakeLock;
-	private boolean mNotificationVisible = false;
-	
-	@Override
-	public void onCreate() {
-		serviceActive = true;
-		mSampleShuffler = new SampleShuffler();
-		mSampleGenerator = new SampleGenerator(mSampleShuffler);
-		mNotificationManager =
-			(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-		PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
-		mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
-	}
+    
+    // Hacky way of testing whether the service is active.
+    public static volatile boolean serviceActive = false;
+    
+    private SampleShuffler mSampleShuffler;
+    private SampleGenerator mSampleGenerator;
+    
+    private static final int NOTIFY_ID = 1;
+    private NotificationManager mNotificationManager;
+    private PowerManager.WakeLock mWakeLock;
+    private boolean mNotificationVisible = false;
+    
+    @Override
+    public void onCreate() {
+        serviceActive = true;
+        mSampleShuffler = new SampleShuffler();
+        mSampleGenerator = new SampleGenerator(mSampleShuffler);
+        mNotificationManager =
+            (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
+    }
 
-	@Override
-	public void onStart(Intent intent, int startId) {
-		SpectrumData spectrum = intent.getParcelableExtra("spectrum");
-		mSampleGenerator.updateSpectrum(spectrum);
-		if (!mNotificationVisible) {
-			addNotify();
-		}
-		if (!mWakeLock.isHeld()) {
-			mWakeLock.acquire();
-		}
-	}
+    @Override
+    public void onStart(Intent intent, int startId) {
+        SpectrumData spectrum = intent.getParcelableExtra("spectrum");
+        mSampleGenerator.updateSpectrum(spectrum);
+        if (!mNotificationVisible) {
+            addNotify();
+        }
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
+    }
 
-	@Override
-	public void onDestroy() {
-		serviceActive = false;
-		mSampleGenerator.stopThread();
-		mSampleShuffler.stopThread();
-		removeNotify();
-		mWakeLock.release();
-	}
+    @Override
+    public void onDestroy() {
+        serviceActive = false;
+        mSampleGenerator.stopThread();
+        mSampleShuffler.stopThread();
+        removeNotify();
+        mWakeLock.release();
+    }
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		// Don't use binding.
-		return null;
-	}
-	
-	private void addNotify() {
-		int icon = R.drawable.stat_noise;
-		long when = System.currentTimeMillis();
-		Notification n = new Notification(icon, null, when);
-		n.flags |= Notification.FLAG_ONGOING_EVENT;
-		
-		Intent intent = new Intent(this, ChromaDoze.class);
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
-		n.setLatestEventInfo(
-				getApplicationContext(),
-				getString(R.string.app_name),
-				getString(R.string.select_to_configure),
-				contentIntent);
-		mNotificationManager.notify(NOTIFY_ID, n);
-		mNotificationVisible = true;
-	}
-	
-	private void removeNotify() {
-		mNotificationManager.cancel(NOTIFY_ID);
-		mNotificationVisible = false;
-	}
+    @Override
+    public IBinder onBind(Intent intent) {
+        // Don't use binding.
+        return null;
+    }
+    
+    private void addNotify() {
+        int icon = R.drawable.stat_noise;
+        long when = System.currentTimeMillis();
+        Notification n = new Notification(icon, null, when);
+        n.flags |= Notification.FLAG_ONGOING_EVENT;
+        
+        Intent intent = new Intent(this, ChromaDoze.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        n.setLatestEventInfo(
+                getApplicationContext(),
+                getString(R.string.app_name),
+                getString(R.string.select_to_configure),
+                contentIntent);
+        mNotificationManager.notify(NOTIFY_ID, n);
+        mNotificationVisible = true;
+    }
+    
+    private void removeNotify() {
+        mNotificationManager.cancel(NOTIFY_ID);
+        mNotificationVisible = false;
+    }
 }

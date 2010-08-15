@@ -49,53 +49,53 @@ public class ChromaDoze extends Activity implements OnClickListener {
         mEqualizer.loadState(pref);
     }
     
-	@Override
-	protected void onPause() {
-		super.onPause();
-		SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
-		pref.clear();
-		mEqualizer.saveState(pref);
-		pref.commit();
-	}
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
+        pref.clear();
+        mEqualizer.saveState(pref);
+        pref.commit();
+    }
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-		
-		// Do a soft sync-up of the service state.
-		boolean active = NoiseService.serviceActive;
-		mStopButton.setText(active ? mStopText : mStartText);
-		mEqualizer.setSendEnabled(active);
-	}
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // Do a soft sync-up of the service state.
+        boolean active = NoiseService.serviceActive;
+        mStopButton.setText(active ? mStopText : mStartText);
+        mEqualizer.setSendEnabled(active);
+    }
 
-	public void onClick(View v) {
-		// Force the service into its expected state.
-		if (mStopButton.getText().equals(mStartText)) {
-			mEqualizer.startSending();
-			mStopButton.setText(mStopText);
-		} else {
-			mEqualizer.stopSending();
-			mStopButton.setText(mStartText);
-		}
-	}
+    public void onClick(View v) {
+        // Force the service into its expected state.
+        if (mStopButton.getText().equals(mStartText)) {
+            mEqualizer.startSending();
+            mStopButton.setText(mStopText);
+        } else {
+            mEqualizer.stopSending();
+            mStopButton.setText(mStartText);
+        }
+    }
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu)).setIcon(
-				android.R.drawable.ic_menu_info_details);
-		return true;
-	}
-	
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-	    switch (item.getItemId()) {
-	    case MENU_ABOUT:
-	    	AboutDialog dialog = new AboutDialog(this);
-	    	dialog.show();
-	        return true;
-	    }
-	    return false;
-	}
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu)).setIcon(
+                android.R.drawable.ic_menu_info_details);
+        return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case MENU_ABOUT:
+            AboutDialog dialog = new AboutDialog(this);
+            dialog.show();
+            return true;
+        }
+        return false;
+    }
 
 
 }
