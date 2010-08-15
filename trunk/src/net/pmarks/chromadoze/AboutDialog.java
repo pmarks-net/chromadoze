@@ -27,34 +27,34 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class AboutDialog extends Dialog {
-	public AboutDialog(Context context) {
-		super(context);
-	}
+    public AboutDialog(Context context) {
+        super(context);
+    }
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.about);
-		setTitle(R.string.app_name);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.about);
+        setTitle(R.string.app_name);
 
-		Button okButton = (Button) findViewById(R.id.OkButton);
-		okButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				dismiss();
-			}
-		});
+        Button okButton = (Button) findViewById(R.id.OkButton);
+        okButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                dismiss();
+            }
+        });
 
-		PackageInfo pinfo;
-		try {
-			Context context = getContext();
-			pinfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-		} catch (NameNotFoundException e) {
-			throw new RuntimeException("Can't find package?");
-		}
+        PackageInfo pinfo;
+        try {
+            Context context = getContext();
+            pinfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+        } catch (NameNotFoundException e) {
+            throw new RuntimeException("Can't find package?");
+        }
 
-		// Evaluate the format string in VersionText.
-		TextView versionText = (TextView) findViewById(R.id.VersionText);
-		String versionFormat = versionText.getText().toString();
-		versionText.setText(String.format(versionFormat, pinfo.versionName));
-	}
+        // Evaluate the format string in VersionText.
+        TextView versionText = (TextView) findViewById(R.id.VersionText);
+        String versionFormat = versionText.getText().toString();
+        versionText.setText(String.format(versionFormat, pinfo.versionName));
+    }
 }
