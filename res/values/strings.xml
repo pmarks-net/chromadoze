@@ -5,4 +5,5 @@
     <string name="stop_button">Stop</string>
     <string name="select_to_configure">Select to configure noise generation.</string>
     <string name="about_menu">About</string>
+    <string name="generating">Generating IDCT blocks</string>
 </resources>

@@ -78,6 +78,10 @@ public class SampleGeneratorState {
         }
     }
     
+    public int getPercent() {
+        return mChunkNumber * 100 / (N_SMALL_CHUNKS + N_LARGE_CHUNKS);
+    }
+    
     public int getChunkSize() {
         return mChunkNumber < N_SMALL_CHUNKS ? SMALL_CHUNK_SIZE : LARGE_CHUNK_SIZE;
     }

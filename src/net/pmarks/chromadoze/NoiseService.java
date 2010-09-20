@@ -17,19 +17,25 @@
 
 package net.pmarks.chromadoze;
 
+import junit.framework.Assert;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.PowerManager;
 
 public class NoiseService extends Service {
+    public static final int PERCENT_MSG = 1;
     
-    // Hacky way of testing whether the service is active.
-    public static volatile boolean serviceActive = false;
+    // These must be accessed only from the main thread. 
+    private static int sLastPercent = -1;
+    private static NoiseServicePercentListener sPercentListener = null;
     
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
@@ -37,36 +43,45 @@ public class NoiseService extends Service {
     private static final int NOTIFY_ID = 1;
     private NotificationManager mNotificationManager;
     private PowerManager.WakeLock mWakeLock;
-    private boolean mNotificationVisible = false;
+    
+    private Handler mPercentHandler;
     
     @Override
     public void onCreate() {
-        serviceActive = true;
+        // Set up a message handler in the main thread.
+        mPercentHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                Assert.assertEquals(PERCENT_MSG, msg.what);
+                updatePercent(msg.arg1);
+            }
+        };
+        
         mSampleShuffler = new SampleShuffler();
-        mSampleGenerator = new SampleGenerator(mSampleShuffler);
+        mSampleGenerator = new SampleGenerator(this, mSampleShuffler);
         mNotificationManager =
             (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
+        mWakeLock.acquire();
+        
+        addNotify();
     }
 
     @Override
     public void onStart(Intent intent, int startId) {
         SpectrumData spectrum = intent.getParcelableExtra("spectrum");
         mSampleGenerator.updateSpectrum(spectrum);
-        if (!mNotificationVisible) {
-            addNotify();
-        }
-        if (!mWakeLock.isHeld()) {
-            mWakeLock.acquire();
-        }
     }
 
     @Override
     public void onDestroy() {
-        serviceActive = false;
         mSampleGenerator.stopThread();
         mSampleShuffler.stopThread();
+        
+        mPercentHandler.removeMessages(PERCENT_MSG);
+        updatePercent(-1);
+        
         removeNotify();
         mWakeLock.release();
     }
@@ -77,6 +92,7 @@ public class NoiseService extends Service {
         return null;
     }
     
+    // Display an icon in the notification bar.
     private void addNotify() {
         int icon = R.drawable.stat_noise;
         long when = System.currentTimeMillis();
@@ -91,11 +107,33 @@ public class NoiseService extends Service {
                 getString(R.string.select_to_configure),
                 contentIntent);
         mNotificationManager.notify(NOTIFY_ID, n);
-        mNotificationVisible = true;
     }
     
     private void removeNotify() {
         mNotificationManager.cancel(NOTIFY_ID);
-        mNotificationVisible = false;
+    }
+    
+    // Call updatePercent() from any thread.
+    public void updatePercentAsync(int percent) {
+        mPercentHandler.removeMessages(PERCENT_MSG);
+        Message m = Message.obtain(mPercentHandler, PERCENT_MSG);
+        m.arg1 = percent;
+        m.sendToTarget();
+    }
+
+    // If connected, notify the main activity of our progress.
+    // This must run in the main thread.
+    private static void updatePercent(int percent) {
+        if (sPercentListener != null) {
+            sPercentListener.onNoiseServicePercentChange(percent);
+        }
+        sLastPercent = percent;
+    }
+    
+    // Connect the main activity so it receives progress updates.
+    // This must run in the main thread.
+    public static void setPercentListener(NoiseServicePercentListener listener) {
+        sPercentListener = listener;
+        updatePercent(sLastPercent);
     }
 }

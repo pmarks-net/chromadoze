@@ -28,8 +28,9 @@ public class SampleGenerator {
     private Handler mHandler;
     private Worker mWorkerThread;
     private SpectrumData mPendingSpectrum;
+    private NoiseService mNoiseService;
     private SampleShuffler mSampleShuffler;
-
+    
     private int mLastDctSize = -1;
     private FloatDCT_1D mDct;
     private Random mRandom = new Random();
@@ -38,7 +39,8 @@ public class SampleGenerator {
     private SpectrumData mSpectrum;
     private SampleGeneratorState mState;
     
-    public SampleGenerator(SampleShuffler sampleShuffler) {
+    public SampleGenerator(NoiseService noiseService, SampleShuffler sampleShuffler) {
+        mNoiseService = noiseService;
         mSampleShuffler = sampleShuffler;
         mState = new SampleGeneratorState();
         
@@ -71,6 +73,10 @@ public class SampleGenerator {
     private static class Worker extends Thread {
         private Handler mHandler;
         
+        Worker() {
+            super("SampleGeneratorThread");
+        }
+        
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             Looper.prepare();
@@ -101,6 +107,7 @@ public class SampleGenerator {
             }
             mSpectrum = spectrum;
             mState.reset();
+            mNoiseService.updatePercentAsync(mState.getPercent());
             mHandler.post(makeNextChunk);
         }
     };
@@ -120,6 +127,7 @@ public class SampleGenerator {
             if (mSampleShuffler.handleChunk(dctData, mState.getStage())) {
                 // Not dropped.
                 mState.advance();
+                mNoiseService.updatePercentAsync(mState.getPercent());
             }
             mHandler.post(makeNextChunk);
         }

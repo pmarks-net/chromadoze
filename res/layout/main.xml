@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+    <LinearLayout android:id="@+id/LinearLayout01"
+        android:layout_height="wrap_content" android:layout_width="fill_parent">
+        <Button android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:id="@+id/StopButton"
+            android:text="@+id/StopButton" />
+        <LinearLayout android:id="@+id/LinearLayout02"
+            android:layout_height="wrap_content" android:layout_width="fill_parent"
+            android:orientation="vertical">
+            <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" android:id="@+id/StateText"
+                android:text="@string/generating"></TextView>
+            <ProgressBar android:layout_height="wrap_content"
+                android:max="100" android:indeterminate="false"
+                android:layout_width="fill_parent"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:id="@+id/PercentBar" android:layout_gravity="left"></ProgressBar>
+        </LinearLayout>
+
+    </LinearLayout>
+    <net.pmarks.chromadoze.EqualizerView
+        android:layout_width="fill_parent" android:layout_height="fill_parent"
+        android:id="@+id/EqualizerView" />
+</LinearLayout>
