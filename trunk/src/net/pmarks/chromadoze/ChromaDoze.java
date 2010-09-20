@@ -25,14 +25,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
-public class ChromaDoze extends Activity implements OnClickListener {
+public class ChromaDoze extends Activity implements OnClickListener, NoiseServicePercentListener {
     private static final int MENU_ABOUT = 1;
 
-    private String mStartText;
-    private String mStopText;
     private EqualizerView mEqualizer;
     private Button mStopButton;
+    private TextView mStateText;
+    private ProgressBar mPercentBar;
+    
+    private String mStartString;
+    private String mStopString;
+
+    private boolean mServiceActive;
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -41,10 +48,13 @@ public class ChromaDoze extends Activity implements OnClickListener {
         mEqualizer = (EqualizerView)findViewById(R.id.EqualizerView);
         mStopButton = (Button)findViewById(R.id.StopButton);
         mStopButton.setOnClickListener(this);
-        
-        mStartText = getString(R.string.start_button);
-        mStopText = getString(R.string.stop_button);
-        
+        mStateText = (TextView)findViewById(R.id.StateText);
+        mPercentBar = (ProgressBar)findViewById(R.id.PercentBar);
+
+        // Get strings.
+        mStartString = getString(R.string.start_button);
+        mStopString = getString(R.string.stop_button);
+
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
         mEqualizer.loadState(pref);
     }
@@ -52,6 +62,10 @@ public class ChromaDoze extends Activity implements OnClickListener {
     @Override
     protected void onPause() {
         super.onPause();
+        
+        // Stop receiving progress events.
+        NoiseService.setPercentListener(null);
+        
         SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
         pref.clear();
         mEqualizer.saveState(pref);
@@ -62,20 +76,17 @@ public class ChromaDoze extends Activity implements OnClickListener {
     protected void onResume() {
         super.onResume();
         
-        // Do a soft sync-up of the service state.
-        boolean active = NoiseService.serviceActive;
-        mStopButton.setText(active ? mStopText : mStartText);
-        mEqualizer.setSendEnabled(active);
+        // Start receiving progress events.
+        NoiseService.setPercentListener(this);
+        mEqualizer.setSendEnabled(mServiceActive);
     }
 
     public void onClick(View v) {
         // Force the service into its expected state.
-        if (mStopButton.getText().equals(mStartText)) {
+        if (!mServiceActive) {
             mEqualizer.startSending();
-            mStopButton.setText(mStopText);
         } else {
             mEqualizer.stopSending();
-            mStopButton.setText(mStartText);
         }
     }
 
@@ -96,6 +107,22 @@ public class ChromaDoze extends Activity implements OnClickListener {
         }
         return false;
     }
-
-
+    
+    public void onNoiseServicePercentChange(int percent) {
+        int vis;
+        if (percent < 0) {
+            mServiceActive = false;
+            vis = View.INVISIBLE;
+        } else if (percent < 100) {
+            mServiceActive = true;
+            mPercentBar.setProgress(percent);
+            vis = View.VISIBLE;
+        } else {
+            mServiceActive = true;
+            vis = View.INVISIBLE;
+        }
+        mPercentBar.setVisibility(vis);
+        mStateText.setVisibility(vis);
+        mStopButton.setText(mServiceActive ? mStopString : mStartString);
+    }
 }

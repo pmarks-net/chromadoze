@@ -27,7 +27,7 @@ import android.os.Process;
 
 class SampleShuffler {
     public static final int FADE_LEN = 500;
-    public static final int AUDIO_BUFFER_LEN = 12288;
+    public static final int MIN_AUDIO_BUFFER_LEN = 12288;
     public static final int SAMPLE_RATE = 44100;
 
     public static final float BASE_AMPLITUDE = 20000;
@@ -50,7 +50,7 @@ class SampleShuffler {
         makeFadeEnvelopes();
         
         // Start playing silence until real data arrives.
-        exchangeChunk(new AudioChunk(new float[AUDIO_BUFFER_LEN]));
+        exchangeChunk(new AudioChunk(new float[MIN_AUDIO_BUFFER_LEN]));
         
         mPlaybackThread = new PlaybackThread();
         mPlaybackThread.start();
@@ -252,15 +252,32 @@ class SampleShuffler {
     }
     
     private class PlaybackThread extends Thread {
+
+        private int mAudioBufferLen;
+        
+        PlaybackThread() {
+            super("SampleShufflerThread");
+        }
+        
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+            
+            // Possibly increase the buffer size, if our default is too small.
+            mAudioBufferLen = Math.max(
+                    AudioTrack.getMinBufferSize(
+                            SAMPLE_RATE,
+                            AudioFormat.CHANNEL_CONFIGURATION_MONO,
+                            AudioFormat.ENCODING_PCM_16BIT),
+                    MIN_AUDIO_BUFFER_LEN);
+
             AudioTrack track = new AudioTrack(
                     AudioManager.STREAM_MUSIC,
                     SAMPLE_RATE,
                     AudioFormat.CHANNEL_CONFIGURATION_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
-                    AUDIO_BUFFER_LEN,
+                    mAudioBufferLen,
                     AudioTrack.MODE_STREAM);
+            
             track.play();
 
             try {
@@ -309,7 +326,7 @@ class SampleShuffler {
                 throws ChunksPurged, StopThread {
             for (int cursor = start; cursor < len;) {
                 checkForInterrupts();
-                int toWrite = Math.min(AUDIO_BUFFER_LEN / 2, len - cursor);
+                int toWrite = Math.min(mAudioBufferLen / 2, len - cursor);
                 track.write(data, cursor, toWrite);
                 cursor += toWrite;
             }
