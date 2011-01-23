@@ -63,6 +63,12 @@ public class ChromaDoze extends Activity implements OnClickListener, NoiseServic
     protected void onPause() {
         super.onPause();
         
+        // If the equalizer is silent, stop the service.
+        // This makes it harder to leave running accidentally.
+        if (mServiceActive && mEqualizer.isSilent()) {
+            mEqualizer.stopSending();
+        }
+
         // Stop receiving progress events.
         NoiseService.setPercentListener(null);
         

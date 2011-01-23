@@ -59,6 +59,16 @@ public class EqualizerView extends android.view.View {
             mBars[i] = pref.getFloat("barHeight" + i, .5f);
         }
     }
+
+    // Return true if all equalizer bars are set to zero.
+    public boolean isSilent() {
+        for (int i = 0; i < mBars.length; i++) {
+            if (mBars[i] > 0) {
+                return false;
+            }
+        }
+        return true;
+    }
     
     private void makeColors() {
         Bitmap bmp = null;
