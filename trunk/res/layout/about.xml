@@ -10,7 +10,7 @@
         android:layout_height="wrap_content" android:layout_gravity="center"
         android:id="@+id/VersionText" android:text="Version %s" />
     <TextView android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:text="by Paul Marks"
+        android:layout_height="wrap_content" android:text="© 2011 Paul Marks"
         android:paddingBottom="10sp" android:layout_gravity="center" />
     <TextView android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:autoLink="web"
