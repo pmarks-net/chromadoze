@@ -49,10 +49,10 @@ public class NoiseService extends Service {
     
     // Fields for {start,stop}ForegroundCompat().  See:
     // http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/app/ForegroundService.html
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     private static final Class[] mStartForegroundSignature = new Class[] {
         int.class, Notification.class};
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     private static final Class[] mStopForegroundSignature = new Class[] {
         boolean.class};
     private NotificationManager mNM;
