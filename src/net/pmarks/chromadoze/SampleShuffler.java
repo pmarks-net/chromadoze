@@ -25,6 +25,24 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Process;
 
+/* Crossfade notes:
+
+When adding two streams together, the perceived amplitude stays constant
+if x^2 + y^2 == 1 for amplitudes x, y.
+
+A useful identify is: sin(x)^2 + cos(x)^2 == 1.
+
+Thus, we can perform a constant-amplitude crossfade using:
+  result = fade_out * cos(x) + fade_in * sin(x)
+  for x in [0, pi/2]
+  
+But we also need to prevent clipping.  The maximum of sin(x) + cos(x)
+occurs at the midpoint, with a result of sqrt(2), or ~1.414.
+
+Thus, for a 16-bit output stream in the range +/-32767, we need to keep the
+individual streams below 32767 / sqrt(2), or ~23170.
+*/
+
 class SampleShuffler {
     public static final int FADE_LEN = 500;
     public static final int MIN_AUDIO_BUFFER_LEN = 12288;
@@ -36,7 +54,6 @@ class SampleShuffler {
     private ArrayList<AudioChunk> mAudioChunks = null;
     private Random mRandom = new Random();
     
-    private boolean mChunksPurged = false;
     private boolean mStopThread = false;
     
     private float mGlobalVolumeFactor;
@@ -44,10 +61,16 @@ class SampleShuffler {
     private float mFadeInEnvelope[];
     private float mFadeOutEnvelope[];
     
+    // Filler state.
+    private int mFillCursor;
+    private short mChunk0[];
+    private short mChunk1[];
+    
     private PlaybackThread mPlaybackThread;
     
     public SampleShuffler() {
         makeFadeEnvelopes();
+        resetFillState(null);
         
         // Start playing silence until real data arrives.
         exchangeChunk(new AudioChunk(new float[MIN_AUDIO_BUFFER_LEN]));
@@ -75,10 +98,6 @@ class SampleShuffler {
             mFadeInEnvelope[i] = (float)Math.sin(progress * Math.PI / 2.0);
             mFadeOutEnvelope[i] = (float)Math.cos(progress * Math.PI / 2.0);
         }
-    }
-    
-    private static class ChunksPurged extends Exception {
-        private static final long serialVersionUID = -1855423352961625228L;
     }
 
     private static class StopThread extends Exception {
@@ -218,6 +237,17 @@ class SampleShuffler {
         }
     }
     
+    private synchronized void resetFillState(short chunk0[]) {
+        // mFillCursor begins at the first non-faded sample, not at 0.
+        mFillCursor = FADE_LEN;
+        mChunk0 = chunk0;
+        mChunk1 = null;
+    }
+    
+    private synchronized short[] getRandomChunk() {
+        return mAudioChunks.get(mRandom.nextInt(mAudioChunks.size())).getPcmData();
+    }
+    
     private synchronized void addChunk(AudioChunk chunk) {
         mAudioChunks.add(chunk);
     }
@@ -226,7 +256,7 @@ class SampleShuffler {
         mAudioChunks.clear();
         mAudioChunks.add(chunk);
         if (notify) {
-            mChunksPurged = true;
+            resetFillState(null);
         }
     }
     
@@ -237,17 +267,49 @@ class SampleShuffler {
         return oldChunks;
     }
     
-    private synchronized short[] getRandomChunk() {
-        mChunksPurged = false;
-        return mAudioChunks.get(mRandom.nextInt(mAudioChunks.size())).getPcmData();
-    }
-    
-    private synchronized void checkForInterrupts() throws ChunksPurged, StopThread {
+    private synchronized void fillBuffer(short[] out) throws StopThread {
         if (mStopThread) {
             throw new StopThread();
         }
-        if (mChunksPurged) {
-            throw new ChunksPurged();
+        
+        if (mChunk0 == null) {
+            // This should only happen after a reset.
+            mChunk0 = getRandomChunk();
+        }
+
+        int outPos = 0;
+        while (true) {
+            // Get the index within mChunk0 where the fade-out begins.
+            final int firstFadeSample = mChunk0.length - FADE_LEN;
+            
+            // Fill from the non-faded part of the first chunk.
+            if (mFillCursor < firstFadeSample) {
+                final int toWrite = Math.min(firstFadeSample - mFillCursor, out.length - outPos);
+                System.arraycopy(mChunk0, mFillCursor, out, outPos, toWrite);
+                mFillCursor += toWrite;
+                outPos += toWrite;
+            }
+
+            if (outPos >= out.length) {
+                return;
+            }
+            
+            // Fill from the crossfade between two chunks.
+            if (mChunk1 == null) {
+                mChunk1 = getRandomChunk();
+            }
+            while (mFillCursor < mChunk0.length) {
+                out[outPos] = (short)(mChunk0[mFillCursor] +
+                                      mChunk1[mFillCursor - firstFadeSample]);
+                mFillCursor++;
+                outPos++;
+                if (outPos >= out.length) {
+                    return;
+                }
+            }
+
+            // Consumed all the fade data; switch to the next chunk.
+            resetFillState(mChunk1);
         }
     }
     
@@ -279,57 +341,16 @@ class SampleShuffler {
                     AudioTrack.MODE_STREAM);
             
             track.play();
-
+            
             try {
-                playLoop(track);
+                short[] buf = new short[mAudioBufferLen / 2];
+                while (true) {
+                    fillBuffer(buf);
+                    track.write(buf, 0, buf.length);
+                }
             } catch (StopThread e) {
             }
             track.release();
-        }
-        
-        private void playLoop(AudioTrack track) throws StopThread {
-            short[] curChunk = getRandomChunk();
-            short[] buf = new short[0];
-            while (true) {
-                try {
-                    // Get a buffer big enough to hold the middle and fade.  For some
-                    // reason, the audio popped when tried playing the middle in-place.
-                    int toWrite = curChunk.length - FADE_LEN;
-                    if (buf.length != toWrite) {
-                        buf = new short[toWrite];
-                    }
-                    
-                    // Fill in everything but the faded edges.
-                    int middleLen = curChunk.length - 2 * FADE_LEN;
-                    System.arraycopy(curChunk, FADE_LEN, buf, 0, middleLen);
-                    
-                    // Get the next chunk.
-                    short[] nextChunk = getRandomChunk();
-
-                    // Crossfade by adding the end of this chunk to the start of the next.
-                    for (int i = 0; i < FADE_LEN; i++) {
-                        buf[middleLen + i] = (short)(
-                                curChunk[curChunk.length - FADE_LEN + i] + nextChunk[i]);
-                    }
-                    doWrite(track, buf, 0, toWrite);
-                    curChunk = nextChunk;
-                } catch (ChunksPurged e) {
-                    // Immediately jump to a different chunk.
-                    // This can produce a slight pop, but it's not worth fixing right now.
-                    curChunk = getRandomChunk();
-                }
-            }
-        }
-        
-        // Write some data to the AudioTrack, periodically checking for an interruption. 
-        private void doWrite(AudioTrack track, short[] data, int start, int len)
-                throws ChunksPurged, StopThread {
-            for (int cursor = start; cursor < len;) {
-                checkForInterrupts();
-                int toWrite = Math.min(mAudioBufferLen / 2, len - cursor);
-                track.write(data, cursor, toWrite);
-                cursor += toWrite;
-            }
         }
     }
 }
