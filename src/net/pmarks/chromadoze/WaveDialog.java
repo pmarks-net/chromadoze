@@ -67,20 +67,20 @@ public class WaveDialog extends Dialog implements OnSeekBarChangeListener {
 
         mPeriodText = (TextView) findViewById(R.id.PeriodText);
         mPeriodText.setText(mUiState.getPeriodText());
+
+        // When the volume is at 100%, disable the period bar.
+        mPeriodSeek.setEnabled(mUiState.getMinVol() != 100);
     }
 
     public void onProgressChanged(SeekBar seekBar, int progress,
             boolean fromUser) {
-        if (seekBar == mMinVolSeek && mPeriodSeek != null) {
-            // Disable the period bar when volume is at 100%.
-            mPeriodSeek.setEnabled(progress != 100);
-        }
         if (!fromUser) {
             return;
         }
         if (seekBar == mMinVolSeek) {
             mUiState.setMinVol(progress);
             mMinVolText.setText(mUiState.getMinVolText());
+            mPeriodSeek.setEnabled(progress != 100);
         } else if (seekBar == mPeriodSeek) {
             mUiState.setPeriod(progress);
             mPeriodText.setText(mUiState.getPeriodText());
