@@ -30,25 +30,25 @@ public class SampleGenerator {
     private SpectrumData mPendingSpectrum;
     private NoiseService mNoiseService;
     private SampleShuffler mSampleShuffler;
-    
+
     private int mLastDctSize = -1;
     private FloatDCT_1D mDct;
     private Random mRandom = new Random();
-    
+
     // Chunk-making progress:
     private SpectrumData mSpectrum;
     private SampleGeneratorState mState;
-    
+
     public SampleGenerator(NoiseService noiseService, SampleShuffler sampleShuffler) {
         mNoiseService = noiseService;
         mSampleShuffler = sampleShuffler;
         mState = new SampleGeneratorState();
-        
+
         mWorkerThread = new Worker();
         mWorkerThread.start();
         mHandler = mWorkerThread.getHandler();
     }
-    
+
     public void stopThread() {
         mHandler.postAtFrontOfQueue(stopLooping);
         try {
@@ -56,12 +56,12 @@ public class SampleGenerator {
         } catch (InterruptedException e) {
         }
     }
-    
+
     public synchronized void updateSpectrum(SpectrumData spectrum) {
         mPendingSpectrum = spectrum;
         mHandler.postAtFrontOfQueue(startNewChunks);
     }
-    
+
     private synchronized SpectrumData popPendingSpectrum() {
         try {
             return mPendingSpectrum;
@@ -69,14 +69,14 @@ public class SampleGenerator {
             mPendingSpectrum = null;
         }
     }
-    
+
     private static class Worker extends Thread {
         private Handler mHandler;
-        
+
         Worker() {
             super("SampleGeneratorThread");
         }
-        
+
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             Looper.prepare();
@@ -86,7 +86,7 @@ public class SampleGenerator {
             }
             Looper.loop();
         }
-        
+
         public synchronized Handler getHandler() {
             while (mHandler == null) {
                 try {
@@ -97,21 +97,21 @@ public class SampleGenerator {
             return mHandler;
         }
     }
-    
+
     private Runnable startNewChunks = new Runnable() {
         public void run() {
             SpectrumData spectrum = popPendingSpectrum();
-            if (spectrum == null) {
+            if (spectrum == null || spectrum.sameSpectrum(mSpectrum)) {
                 // No new spectrum available.
                 return;
             }
-            mSpectrum = spectrum;
             mState.reset();
             mNoiseService.updatePercentAsync(mState.getPercent());
             mHandler.post(makeNextChunk);
+            mSpectrum = spectrum;
         }
     };
-    
+
     private Runnable makeNextChunk = new Runnable() {
         public void run() {
             if (mState.done()) {
@@ -120,10 +120,10 @@ public class SampleGenerator {
                 mLastDctSize = -1;
                 return;
             }
-            
+
             int dctSize = mState.getChunkSize();
             float[] dctData = doIDCT(dctSize);
-            
+
             if (mSampleShuffler.handleChunk(dctData, mState.getStage())) {
                 // Not dropped.
                 mState.advance();
@@ -131,9 +131,9 @@ public class SampleGenerator {
             }
             mHandler.post(makeNextChunk);
         }
-        
+
     };
-    
+
     private Runnable stopLooping = new Runnable() {
         public void run() {
             mHandler.removeCallbacks(startNewChunks);
@@ -141,16 +141,16 @@ public class SampleGenerator {
             Looper.myLooper().quit();
         }
     };
-    
+
     private float[] doIDCT(int dctSize) {
         if (dctSize != mLastDctSize) {
             mDct = new FloatDCT_1D(dctSize);
             mLastDctSize = dctSize;
         }
         float[] dctData = new float[dctSize];
-        
+
         mSpectrum.fill(dctData, SampleShuffler.SAMPLE_RATE);
-        
+
         // Multiply by a block of white noise.
         for (int i = 0; i < dctSize; i += 4) {
             int rand = mRandom.nextInt();
@@ -159,7 +159,7 @@ public class SampleGenerator {
             dctData[i + 2] *= (byte)(rand >> 16) / 128f;
             dctData[i + 3] *= (byte)(rand >> 24) / 128f;
         }
-        
+
         mDct.inverse(dctData, false);
         return dctData;
     }

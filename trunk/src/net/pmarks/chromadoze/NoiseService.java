@@ -34,19 +34,19 @@ import android.os.PowerManager;
 
 public class NoiseService extends Service {
     public static final int PERCENT_MSG = 1;
-    
-    // These must be accessed only from the main thread. 
+
+    // These must be accessed only from the main thread.
     private static int sLastPercent = -1;
     private static NoiseServicePercentListener sPercentListener = null;
-    
+
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
-    
+
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
-    
+
     private Handler mPercentHandler;
-    
+
     // Fields for {start,stop}ForegroundCompat().  See:
     // http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/app/ForegroundService.html
     @SuppressWarnings("rawtypes")
@@ -60,7 +60,7 @@ public class NoiseService extends Service {
     private Method mStopForeground;
     private Object[] mStartForegroundArgs = new Object[2];
     private Object[] mStopForegroundArgs = new Object[1];
-    
+
     @Override
     public void onCreate() {
         // Set up a message handler in the main thread.
@@ -71,13 +71,13 @@ public class NoiseService extends Service {
                 updatePercent(msg.arg1);
             }
         };
-        
+
         mSampleShuffler = new SampleShuffler();
         mSampleGenerator = new SampleGenerator(this, mSampleShuffler);
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
         mWakeLock.acquire();
-        
+
         // Initialization junk for {start,stop}ForegroundCompat().
         mNM = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         try {
@@ -89,13 +89,18 @@ public class NoiseService extends Service {
             // Running on an older platform.
             mStartForeground = mStopForeground = null;
         }
-        
+
         startForegroundCompat(NOTIFY_ID, makeNotify());
     }
 
     @Override
     public void onStart(Intent intent, int startId) {
         SpectrumData spectrum = intent.getParcelableExtra("spectrum");
+
+        // Synchronous updates.
+        mSampleShuffler.setAmpWave(spectrum.getMinVol(), spectrum.getPeriod());
+
+        // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
     }
 
@@ -103,10 +108,10 @@ public class NoiseService extends Service {
     public void onDestroy() {
         mSampleGenerator.stopThread();
         mSampleShuffler.stopThread();
-        
+
         mPercentHandler.removeMessages(PERCENT_MSG);
         updatePercent(-1);
-        
+
         stopForegroundCompat(NOTIFY_ID);
         mWakeLock.release();
     }
@@ -116,14 +121,14 @@ public class NoiseService extends Service {
         // Don't use binding.
         return null;
     }
-    
+
     // Create an icon for the notification bar.
     private Notification makeNotify() {
         int icon = R.drawable.stat_noise;
         long when = System.currentTimeMillis();
         Notification n = new Notification(icon, null, when);
         n.flags |= Notification.FLAG_ONGOING_EVENT;
-        
+
         Intent intent = new Intent(this, ChromaDoze.class);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
         n.setLatestEventInfo(
@@ -131,10 +136,10 @@ public class NoiseService extends Service {
                 getString(R.string.app_name),
                 getString(R.string.select_to_configure),
                 contentIntent);
-        
+
         return n;
     }
-    
+
     // Call updatePercent() from any thread.
     public void updatePercentAsync(int percent) {
         mPercentHandler.removeMessages(PERCENT_MSG);
@@ -151,14 +156,14 @@ public class NoiseService extends Service {
         }
         sLastPercent = percent;
     }
-    
+
     // Connect the main activity so it receives progress updates.
     // This must run in the main thread.
     public static void setPercentListener(NoiseServicePercentListener listener) {
         sPercentListener = listener;
         updatePercent(sLastPercent);
     }
-    
+
     /**
      * This is a wrapper around the new startForeground method, using the older
      * APIs if it is not available.

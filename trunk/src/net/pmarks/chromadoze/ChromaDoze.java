@@ -29,18 +29,20 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class ChromaDoze extends Activity implements OnClickListener, NoiseServicePercentListener {
-    private static final int MENU_ABOUT = 1;
+    private static final int MENU_AMPWAVE = 1;
+    private static final int MENU_ABOUT = 2;
 
+    private UIState mUiState;
     private EqualizerView mEqualizer;
     private Button mStopButton;
     private TextView mStateText;
     private ProgressBar mPercentBar;
-    
+
     private String mStartString;
     private String mStopString;
 
     private boolean mServiceActive;
-    
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,65 +57,72 @@ public class ChromaDoze extends Activity implements OnClickListener, NoiseServic
         mStartString = getString(R.string.start_button);
         mStopString = getString(R.string.stop_button);
 
+        mUiState = new UIState(getApplication());
+
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
-        mEqualizer.loadState(pref);
+        mUiState.loadState(pref);
+        mEqualizer.setUiState(mUiState);
     }
-    
+
     @Override
     protected void onPause() {
         super.onPause();
-        
+
         // If the equalizer is silent, stop the service.
         // This makes it harder to leave running accidentally.
-        if (mServiceActive && mEqualizer.isSilent()) {
-            mEqualizer.stopSending();
+        if (mServiceActive && mUiState.isSilent()) {
+            mUiState.stopSending();
         }
 
         // Stop receiving progress events.
         NoiseService.setPercentListener(null);
-        
+
         SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
         pref.clear();
-        mEqualizer.saveState(pref);
+        mUiState.saveState(pref);
         pref.commit();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        
+
         // Start receiving progress events.
         NoiseService.setPercentListener(this);
-        mEqualizer.setSendEnabled(mServiceActive);
+        mUiState.setSendEnabled(mServiceActive);
     }
 
     public void onClick(View v) {
         // Force the service into its expected state.
         if (!mServiceActive) {
-            mEqualizer.startSending();
+            mUiState.startSending();
         } else {
-            mEqualizer.stopSending();
+            mUiState.stopSending();
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave)).setIcon(
+                android.R.drawable.ic_menu_manage);;
         menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu)).setIcon(
                 android.R.drawable.ic_menu_info_details);
         return true;
     }
-    
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+        case MENU_AMPWAVE:
+            new WaveDialog(this, mUiState).show();
+            return true;
         case MENU_ABOUT:
-            AboutDialog dialog = new AboutDialog(this);
-            dialog.show();
+            new AboutDialog(this).show();
             return true;
         }
         return false;
     }
-    
+
     public void onNoiseServicePercentChange(int percent) {
         int vis;
         if (percent < 0) {

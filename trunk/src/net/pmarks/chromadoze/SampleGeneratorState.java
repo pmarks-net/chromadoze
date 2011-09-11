@@ -28,31 +28,31 @@ public class SampleGeneratorState {
 
     // How many small preview chunks to generate at first.
     private static final int N_SMALL_CHUNKS = 4;
-    
+
     // How many final full-size chunks to generate.
     private static final int N_LARGE_CHUNKS = 20;
-    
+
     // How many large chunks to use for estimating the global volume.
     private static final int N_VOLUME_CHUNKS = 4;
-    
+
     // Size of small/large chunks, in samples.
     private static final int SMALL_CHUNK_SIZE = 8192;
     private static final int LARGE_CHUNK_SIZE = 65536;
-    
+
     private int mChunkNumber = 0;
-    
+
     public void reset() {
         mChunkNumber = 0;
     }
-    
+
     public void advance() {
         mChunkNumber++;
     }
-    
+
     public boolean done() {
         return mChunkNumber >= N_SMALL_CHUNKS + N_LARGE_CHUNKS;
     }
-    
+
     public int getStage() {
         if (mChunkNumber < N_SMALL_CHUNKS) {
             // Small chunk.
@@ -77,11 +77,11 @@ public class SampleGeneratorState {
             return S_LARGE_NOCLIP;
         }
     }
-    
+
     public int getPercent() {
         return mChunkNumber * 100 / (N_SMALL_CHUNKS + N_LARGE_CHUNKS);
     }
-    
+
     public int getChunkSize() {
         return mChunkNumber < N_SMALL_CHUNKS ? SMALL_CHUNK_SIZE : LARGE_CHUNK_SIZE;
     }
