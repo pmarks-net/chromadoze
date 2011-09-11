@@ -31,16 +31,18 @@ public class SpectrumData implements Parcelable {
             return new SpectrumData[size];
         }
     };
-    
+
     public static final float MIN_FREQ = 100;
     public static final float MAX_FREQ = 20000;
     public static final int BAND_COUNT = 32;
 
     // The frequency of the edges between each bar.
     public static final int EDGE_FREQS[] = calculateEdgeFreqs();
-    
+
     private float[] mData;
-    
+    private float mMinVol;
+    private float mPeriod;
+
     private static int[] calculateEdgeFreqs() {
         int[] edgeFreqs = new int[BAND_COUNT + 1];
         float range = MAX_FREQ / MIN_FREQ;
@@ -49,8 +51,8 @@ public class SpectrumData implements Parcelable {
         }
         return edgeFreqs;
     }
-    
-    public SpectrumData(float[] barHeights) {
+
+    public SpectrumData(float[] barHeights, float minVol, float period) {
         if (barHeights.length != BAND_COUNT) {
             throw new RuntimeException("Incorrect number of bands");
         }
@@ -62,11 +64,15 @@ public class SpectrumData implements Parcelable {
                 mData[i] = 0.001f * (float)Math.pow(1000, barHeights[i]);
             }
         }
+        mMinVol = minVol;
+        mPeriod = period;
     }
-    
+
     private SpectrumData(Parcel in) {
         mData = new float[BAND_COUNT];
         in.readFloatArray(mData);
+        mMinVol = in.readFloat();
+        mPeriod = in.readFloat();
     }
 
     public int describeContents() {
@@ -75,8 +81,10 @@ public class SpectrumData implements Parcelable {
 
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeFloatArray(mData);
+        dest.writeFloat(mMinVol);
+        dest.writeFloat(mPeriod);
     }
-    
+
     public void fill(float[] out, int sampleRate) {
         int maxFreq = sampleRate / 2;
         subFill(out, 0f, 0, EDGE_FREQS[0], maxFreq);
@@ -85,10 +93,30 @@ public class SpectrumData implements Parcelable {
         }
         subFill(out, 0f, EDGE_FREQS[BAND_COUNT], maxFreq, maxFreq);
     }
-    
+
     private void subFill(float[] out, float setValue, int startFreq, int limitFreq, int maxFreq) {
         for (int i = startFreq * out.length / maxFreq; i < limitFreq * out.length / maxFreq; i++) {
             out[i] = setValue;
         }
+    }
+
+    public float getMinVol() {
+        return mMinVol;
+    }
+
+    public float getPeriod() {
+        return mPeriod;
+    }
+
+    public boolean sameSpectrum(SpectrumData other) {
+        if (other == null) {
+            return false;
+        }
+        for (int i = 0; i < BAND_COUNT; i++) {
+            if (mData[i] != other.mData[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }
