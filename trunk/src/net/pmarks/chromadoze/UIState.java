@@ -133,7 +133,7 @@ public class UIState {
     public String getPeriodText() {
         float s = getPeriodSeconds();
         if (s >= 1f) {
-            return String.format("%.1f sec", s);
+            return String.format("%.2g sec", s);
         } else {
             return String.format("%d ms", (int)(s * 1000));
         }
@@ -141,7 +141,18 @@ public class UIState {
 
     private float getPeriodSeconds() {
         // Map [0, 100] to a logarithmic scale.
-        return 2f * (float)Math.pow(30, (mPeriod - 50) / 50f);
+        float s = 2f * (float)Math.pow(30, (mPeriod - 50) / 50f);
+        if (s < 1f) {
+            // Round to 10ms
+            s = Math.round(s * 100f) / 100f;
+        } else if (s >= 10f) {
+            // Round to the second.
+            s = Math.round(s);
+        } else {
+            // Round to 0.1s
+            s = Math.round(s * 10f) / 10f;
+        }
+        return s;
     }
 
     private void sendToService() {
