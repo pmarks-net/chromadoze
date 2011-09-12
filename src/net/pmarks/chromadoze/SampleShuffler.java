@@ -288,8 +288,9 @@ class SampleShuffler {
                 // weren't for this interruption.  Later, we'll cross-fade it
                 // with the new data to avoid pops.
                 try {
-                    mAlternateFuture = new short[FADE_LEN];
-                    this.fillBuffer(mAlternateFuture);
+                    short[] peek = new short[FADE_LEN];
+                    this.fillBuffer(peek);
+                    mAlternateFuture = peek;
                 } catch (StopThread e) {
                     // Playback thread will handle this later.
                 }
