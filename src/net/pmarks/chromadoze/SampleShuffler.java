@@ -340,7 +340,7 @@ class SampleShuffler {
                 mFillCursor++;
                 outPos++;
             }
-            
+
             if (outPos >= out.length) {
                 break;
             }
@@ -348,7 +348,7 @@ class SampleShuffler {
             // Consumed all the fade data; switch to the next chunk.
             resetFillState(mChunk1);
         }
-        
+
         if (mAlternateFuture != null) {
             // This means that the spectrum was abruptly changed.  Crossfade
             // from old to new, to avoid pops.  This is more CPU-intensive
@@ -392,7 +392,7 @@ class SampleShuffler {
                 // Make sure the numbers stay reasonable.
                 if (minVol < 0f) minVol = 0f;
                 if (period > 300f) period = 300f;
-                
+
                 // Make a sine wave oscillate from minVol to 100%.
                 mTweakedSine = new float[4*SINE_LEN];
                 float scale = (1f - minVol) / 2f;
@@ -437,6 +437,7 @@ class SampleShuffler {
             super("SampleShufflerThread");
         }
 
+        @Override
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
 
