@@ -18,8 +18,6 @@
 package net.pmarks.chromadoze;
 
 import java.util.ArrayList;
-import java.util.Random;
-
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -52,7 +50,8 @@ class SampleShuffler {
     public static final float CLIP_AMPLITUDE = 23000;  // 32K/sqrt(2)
 
     private ArrayList<AudioChunk> mAudioChunks = null;
-    private Random mRandom = new Random();
+    private XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
+    private int mLastRandomChunk = -1;
 
     private boolean mStopThread = false;
 
@@ -72,10 +71,9 @@ class SampleShuffler {
 
     public SampleShuffler() {
         mSine = makeSineCurve();
-        resetFillState(null);
 
         // Start playing silence until real data arrives.
-        exchangeChunk(new AudioChunk(new float[MIN_AUDIO_BUFFER_LEN]));
+        exchangeChunk(new AudioChunk(new float[MIN_AUDIO_BUFFER_LEN]), true);
 
         mPlaybackThread = new PlaybackThread();
         mPlaybackThread.start();
@@ -201,7 +199,7 @@ class SampleShuffler {
     private void handleChunkPioneer(AudioChunk newChunk, boolean notify) {
         mGlobalVolumeFactor = BASE_AMPLITUDE / newChunk.getMaxAmplitude();
         newChunk.buildPcmData(mGlobalVolumeFactor);
-        addChunkAndPurge(newChunk, notify);
+        exchangeChunk(newChunk, notify);
     }
 
     // Add a new chunk.  If it would clip, make everything quieter.
@@ -249,7 +247,7 @@ class SampleShuffler {
     private void changeGlobalVolume(float maxAmplitude, AudioChunk newChunk) {
         mGlobalVolumeFactor = BASE_AMPLITUDE / maxAmplitude;
         newChunk.buildPcmData(mGlobalVolumeFactor);
-        ArrayList<AudioChunk> oldChunks = exchangeChunk(newChunk);
+        ArrayList<AudioChunk> oldChunks = exchangeChunk(newChunk, false);
         for (AudioChunk c : oldChunks) {
             c.buildPcmData(mGlobalVolumeFactor);
             addChunk(c);
@@ -264,25 +262,31 @@ class SampleShuffler {
     }
 
     private synchronized short[] getRandomChunk() {
-        return mAudioChunks.get(mRandom.nextInt(mAudioChunks.size())).getPcmData();
+        int size = mAudioChunks.size();
+        int pick;
+        // When possible, avoid picking the same chunk twice in a row.
+        if (mLastRandomChunk >= 0 && size > 1) {
+            pick = mRandom.nextInt(size - 1);
+            if (pick >= mLastRandomChunk) ++pick;
+        } else {
+            pick = mRandom.nextInt(size);
+        }
+        mLastRandomChunk = pick;
+        return mAudioChunks.get(pick).getPcmData();
     }
 
     private synchronized void addChunk(AudioChunk chunk) {
         mAudioChunks.add(chunk);
     }
 
-    private synchronized void addChunkAndPurge(AudioChunk chunk, boolean notify) {
-        mAudioChunks.clear();
-        mAudioChunks.add(chunk);
-        if (notify) {
-            resetFillState(null);
-        }
-    }
-
-    private synchronized ArrayList<AudioChunk> exchangeChunk(AudioChunk chunk) {
+    private synchronized ArrayList<AudioChunk> exchangeChunk(AudioChunk chunk, boolean notify) {
         ArrayList<AudioChunk> oldChunks = mAudioChunks;
         mAudioChunks = new ArrayList<AudioChunk>();
         mAudioChunks.add(chunk);
+        mLastRandomChunk = -1;
+        if (notify) {
+            resetFillState(null);
+        }
         return oldChunks;
     }
 
@@ -351,18 +355,20 @@ class SampleShuffler {
         private int mSpeed;
 
         public AmpWave(float minVol, float period) {
-            if (minVol > .999f || period < 0.001f) {
+            if (minVol > .999f || period < .001f) {
                 mAmpWave = null;
                 mSpeed = 0;
             } else {
+                // Make sure the numbers stay reasonable.
+                if (minVol < 0f) minVol = 0f;
+                if (period > 300f) period = 300f;
+                
+                // Make a sine wave oscillate from minVol to 100%.
                 mTweakedSine = new float[4*SINE_LEN];
                 float scale = (1f - minVol) / 2f;
                 for (int i = 0; i < mTweakedSine.length; i++) {
                     mTweakedSine[i] = mSine[i] * scale + 1f - scale;
                 }
-
-                // Make sure the numbers stay reasonable.
-                if (period > 300f) period = 300f;
 
                 // When period == 1 sec, SAMPLE_RATE iterations should cover
                 // SINE_PERIOD virtual points.
