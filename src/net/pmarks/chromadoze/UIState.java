@@ -26,13 +26,13 @@ public class UIState {
 
     private boolean mBarsChanged = false;
     private boolean mSendEnabled = false;
-    private Context mContext;
+    private final Context mContext;
 
     // The current value of each bar, [0.0, 1.0]
-    private float mBars[] = new float[BAND_COUNT];
+    private final float mBars[] = new float[BAND_COUNT];
 
     private int mMinVol = 100;
-    private int mPeriod = 50;
+    private int mPeriod = 18;  // Maps to 1 second
 
     public UIState(Context context) {
         mContext = context;
@@ -51,7 +51,7 @@ public class UIState {
             mBars[i] = pref.getFloat("barHeight" + i, .5f);
         }
         mMinVol = pref.getInt("minVol", 100);
-        mPeriod = pref.getInt("period", 50);
+        mPeriod = pref.getInt("period", 18);
     }
 
     public void startSending() {
@@ -135,24 +135,29 @@ public class UIState {
         if (s >= 1f) {
             return String.format("%.2g sec", s);
         } else {
-            return String.format("%d ms", (int)(s * 1000));
+            return String.format("%d ms", Math.round(s * 1000));
         }
     }
 
     private float getPeriodSeconds() {
-        // Map [0, 100] to a logarithmic scale.
-        float s = 2f * (float)Math.pow(30, (mPeriod - 50) / 50f);
-        if (s < 1f) {
-            // Round to 10ms
-            s = Math.round(s * 100f) / 100f;
-        } else if (s >= 10f) {
-            // Round to the second.
-            s = Math.round(s);
+        // This is a somewhat human-friendly mapping from
+        // scroll position to seconds.
+        if (mPeriod < 9) {
+            // 10ms, 20ms, ..., 90ms
+            return (mPeriod + 1) * .010f;
+        } else if (mPeriod < 18) {
+            // 100ms, 200ms, ..., 900ms
+            return (mPeriod - 9 + 1) * .100f;
+        } else if (mPeriod < 36) {
+            // 1.0s, 1.5s, ..., 9.5s
+            return (mPeriod - 18 + 2) * .5f;
+        } else if (mPeriod < 45) {
+            // 10, 11, ..., 19
+            return (mPeriod - 36 + 10) * 1f;
         } else {
-            // Round to 0.1s
-            s = Math.round(s * 10f) / 10f;
+            // 20, 25, 30, ... 60
+            return (mPeriod - 45 + 4) * 5f;
         }
-        return s;
     }
 
     private void sendToService() {
