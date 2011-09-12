@@ -17,8 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import java.util.Random;
-
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
@@ -33,12 +31,13 @@ public class SampleGenerator {
 
     private int mLastDctSize = -1;
     private FloatDCT_1D mDct;
-    private Random mRandom = new Random();
+    private XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
 
     // Chunk-making progress:
     private SpectrumData mSpectrum;
     private SampleGeneratorState mState;
 
+    // 'random' will only be used from one thread.
     public SampleGenerator(NoiseService noiseService, SampleShuffler sampleShuffler) {
         mNoiseService = noiseService;
         mSampleShuffler = sampleShuffler;
@@ -152,12 +151,12 @@ public class SampleGenerator {
         mSpectrum.fill(dctData, SampleShuffler.SAMPLE_RATE);
 
         // Multiply by a block of white noise.
-        for (int i = 0; i < dctSize; i += 4) {
-            int rand = mRandom.nextInt();
-            dctData[i] *= (byte)rand / 128f;
-            dctData[i + 1] *= (byte)(rand >> 8) / 128f;
-            dctData[i + 2] *= (byte)(rand >> 16) / 128f;
-            dctData[i + 3] *= (byte)(rand >> 24) / 128f;
+        for (int i = 0; i < dctSize;) {
+            long rand = mRandom.nextLong();
+            for (int b = 0; b < 8; b++) {
+                dctData[i++] *= (byte)rand / 128f;
+                rand >>= 8;
+            }
         }
 
         mDct.inverse(dctData, false);
