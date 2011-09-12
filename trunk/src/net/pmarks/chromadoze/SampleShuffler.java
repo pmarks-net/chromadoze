@@ -18,6 +18,7 @@
 package net.pmarks.chromadoze;
 
 import java.util.ArrayList;
+
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -50,7 +51,7 @@ class SampleShuffler {
     public static final float CLIP_AMPLITUDE = 23000;  // 32K/sqrt(2)
 
     private ArrayList<AudioChunk> mAudioChunks = null;
-    private XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
+    private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
     private int mLastRandomChunk = -1;
 
     private boolean mStopThread = false;
@@ -58,7 +59,7 @@ class SampleShuffler {
     private float mGlobalVolumeFactor;
 
     // Sine wave, 4*SINE_LEN points, from [0, 2pi).
-    private float mSine[];
+    private final float mSine[];
 
     // Filler state.
     private int mFillCursor;
@@ -68,7 +69,7 @@ class SampleShuffler {
 
     private AmpWave mAmpWave = new AmpWave(1f, 0f);
 
-    private PlaybackThread mPlaybackThread;
+    private final PlaybackThread mPlaybackThread;
 
     public SampleShuffler() {
         mSine = makeSineCurve();
@@ -120,7 +121,7 @@ class SampleShuffler {
     }
 
     private class AudioChunk {
-        private int mLength;
+        private final int mLength;
         private float[] mFloatData;
         private short[] mPcmData;
         private float mMaxAmplitude;
@@ -336,7 +337,7 @@ class SampleShuffler {
             }
             while (mFillCursor < mChunk0.length && outPos < out.length) {
                 out[outPos] = (short)(mChunk0[mFillCursor] +
-                                      mChunk1[mFillCursor - firstFadeSample]);
+                        mChunk1[mFillCursor - firstFadeSample]);
                 mFillCursor++;
                 outPos++;
             }
@@ -379,7 +380,9 @@ class SampleShuffler {
         public final float mPeriod;
 
         // Same length as mSine, but shifted/stretched according to mMinAmp.
-        private float mTweakedSine[];
+        // We want to do the multiply using integer math, so [0.0, 1.0] is
+        // stored as [0, 32767].
+        private short mTweakedSine[];
 
         private int mPos = (int)(SINE_PERIOD * .75);  // Quietest point.
         private int mSpeed;
@@ -394,10 +397,10 @@ class SampleShuffler {
                 if (period > 300f) period = 300f;
 
                 // Make a sine wave oscillate from minVol to 100%.
-                mTweakedSine = new float[4*SINE_LEN];
+                mTweakedSine = new short[4*SINE_LEN];
                 float scale = (1f - minVol) / 2f;
                 for (int i = 0; i < mTweakedSine.length; i++) {
-                    mTweakedSine[i] = mSine[i] * scale + 1f - scale;
+                    mTweakedSine[i] = (short)((mSine[i] * scale + 1f - scale) * 32767f);
                 }
 
                 // When period == 1 sec, SAMPLE_RATE iterations should cover
@@ -423,7 +426,8 @@ class SampleShuffler {
                 return;
             }
             for (int i = 0; i < buf.length; i++) {
-                buf[i] *= mTweakedSine[mPos / SINE_STRETCH];
+                // Multiply by [0, 1) using integer math.
+                buf[i] = (short)((buf[i] * mTweakedSine[mPos / SINE_STRETCH]) >> 15);
                 mPos = (mPos + mSpeed) & (SINE_PERIOD - 1);
             }
         }
