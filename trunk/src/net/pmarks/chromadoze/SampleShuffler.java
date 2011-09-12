@@ -64,6 +64,7 @@ class SampleShuffler {
     private int mFillCursor;
     private short mChunk0[];
     private short mChunk1[];
+    private short mAlternateFuture[] = null;
 
     private AmpWave mAmpWave = new AmpWave(1f, 0f);
 
@@ -280,13 +281,24 @@ class SampleShuffler {
     }
 
     private synchronized ArrayList<AudioChunk> exchangeChunk(AudioChunk chunk, boolean notify) {
+        if (notify) {
+            if (mAudioChunks != null && mAlternateFuture == null) {
+                // Grab the chunk of data that would've been played if it
+                // weren't for this interruption.  Later, we'll cross-fade it
+                // with the new data to avoid pops.
+                try {
+                    mAlternateFuture = new short[FADE_LEN];
+                    this.fillBuffer(mAlternateFuture);
+                } catch (StopThread e) {
+                    // Playback thread will handle this later.
+                }
+            }
+            resetFillState(null);
+        }
         ArrayList<AudioChunk> oldChunks = mAudioChunks;
         mAudioChunks = new ArrayList<AudioChunk>();
         mAudioChunks.add(chunk);
         mLastRandomChunk = -1;
-        if (notify) {
-            resetFillState(null);
-        }
         return oldChunks;
     }
 
@@ -315,26 +327,44 @@ class SampleShuffler {
             }
 
             if (outPos >= out.length) {
-                return mAmpWave;
+                break;
             }
 
             // Fill from the crossfade between two chunks.
             if (mChunk1 == null) {
                 mChunk1 = getRandomChunk();
             }
-            while (mFillCursor < mChunk0.length) {
+            while (mFillCursor < mChunk0.length && outPos < out.length) {
                 out[outPos] = (short)(mChunk0[mFillCursor] +
                                       mChunk1[mFillCursor - firstFadeSample]);
                 mFillCursor++;
                 outPos++;
-                if (outPos >= out.length) {
-                    return mAmpWave;
-                }
+            }
+            
+            if (outPos >= out.length) {
+                break;
             }
 
             // Consumed all the fade data; switch to the next chunk.
             resetFillState(mChunk1);
         }
+        
+        if (mAlternateFuture != null) {
+            // This means that the spectrum was abruptly changed.  Crossfade
+            // from old to new, to avoid pops.  This is more CPU-intensive
+            // than fading between two chunks, because the envelopes aren't
+            // precomputed.  Also, this might result in clipping if the inputs
+            // happen to be in the middle of a crossfade already.
+            for (int i = 0; i < FADE_LEN; i++) {
+                float sample = mAlternateFuture[i] * mSine[SINE_LEN + i] + out[i] * mSine[i];
+                if (sample > 32767f) sample = 32767f;
+                if (sample < -32767f) sample = -32767f;
+                out[i] = (short)sample;
+            }
+            mAlternateFuture = null;
+        }
+
+        return mAmpWave;
     }
 
     private class AmpWave {
