@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Chroma Doze</string>
+    <string name="start_button">Start</string>
+    <string name="stop_button">Stop</string>
+    <string name="select_to_configure">Select to configure noise generation.</string>
+    <string name="about_menu">About</string>
+    <string name="amp_wave">Amplitude Wave</string>
+    <string name="generating">Generating IDCT blocks</string>
+    <string name="ok_text">&#160; Ok &#160;</string>
+</resources>
