@@ -25,7 +25,6 @@ public class UIState {
     public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
     private boolean mBarsChanged = false;
-    private boolean mSendEnabled = false;
     private final Context mContext;
 
     // The current value of each bar, [0.0, 1.0]
@@ -55,18 +54,12 @@ public class UIState {
     }
 
     public void startSending() {
-        mSendEnabled = true;
         sendToService();
     }
 
     public void stopSending() {
-        mSendEnabled = false;
         Intent intent = new Intent(mContext, NoiseService.class);
         mContext.stopService(intent);
-    }
-
-    public void setSendEnabled(boolean set) {
-        mSendEnabled = set;
     }
 
     // band: The index number of the bar.
@@ -161,9 +154,6 @@ public class UIState {
     }
 
     private void sendToService() {
-        if (!mSendEnabled) {
-            return;
-        }
         Intent intent = new Intent(mContext, NoiseService.class);
         intent.putExtra("spectrum", new SpectrumData(
                 mBars, mMinVol / 100f, getPeriodSeconds()));

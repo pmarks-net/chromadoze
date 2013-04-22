@@ -29,7 +29,7 @@ import android.os.Process;
 When adding two streams together, the perceived amplitude stays constant
 if x^2 + y^2 == 1 for amplitudes x, y.
 
-A useful identify is: sin(x)^2 + cos(x)^2 == 1.
+A useful identity is: sin(x)^2 + cos(x)^2 == 1.
 
 Thus, we can perform a constant-amplitude crossfade using:
   result = fade_out * cos(x) + fade_in * sin(x)
@@ -450,14 +450,14 @@ class SampleShuffler {
             mAudioBufferLen = Math.max(
                     AudioTrack.getMinBufferSize(
                             SAMPLE_RATE,
-                            AudioFormat.CHANNEL_CONFIGURATION_MONO,
+                            AudioFormat.CHANNEL_OUT_MONO,
                             AudioFormat.ENCODING_PCM_16BIT),
                     MIN_AUDIO_BUFFER_LEN);
 
             AudioTrack track = new AudioTrack(
                     AudioManager.STREAM_MUSIC,
                     SAMPLE_RATE,
-                    AudioFormat.CHANNEL_CONFIGURATION_MONO,
+                    AudioFormat.CHANNEL_OUT_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
                     mAudioBufferLen,
                     AudioTrack.MODE_STREAM);

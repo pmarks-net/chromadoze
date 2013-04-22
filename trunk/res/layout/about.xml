@@ -1,28 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content" android:layout_height="wrap_content"
-    android:orientation="vertical" android:paddingBottom="5sp"
-    android:paddingLeft="5sp" android:paddingRight="5sp">
-    <TextView android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:text="Noise spectrum generator for Android"
-        android:layout_gravity="center" />
-    <TextView android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:layout_gravity="center"
-        android:id="@+id/VersionText" android:text="Version %s" />
-    <TextView android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:text="© 2011 Paul Marks"
-        android:paddingBottom="10sp" android:layout_gravity="center" />
-    <TextView android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:autoLink="web"
-        android:text="http://www.pmarks.net/" />
-    <TextView android:layout_height="wrap_content"
-        android:autoLink="web" android:layout_width="wrap_content"
-        android:text="http://chromadoze.googlecode.com/" />
-    <TextView android:layout_width="wrap_content"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="5sp"
+    android:paddingLeft="5sp"
+    android:paddingRight="5sp" >
+
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
-        android:paddingBottom="10sp" android:paddingTop="10sp" />
-    <Button android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:layout_gravity="center"
-        android:id="@+id/OkButton" android:text="@string/ok_text"/>
+        android:layout_gravity="center"
+        android:text="Noise spectrum generator for Android" />
+
+    <TextView
+        android:id="@+id/VersionText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Version %s" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:paddingBottom="10sp"
+        android:text="© 2013 Paul Marks" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:autoLink="web"
+        android:text="https://chromadoze.googlecode.com/" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10sp"
+        android:text="JTransforms © 2009 Piotr Wendykier\nActionBarSherlock © 2013 Jake Wharton" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingBottom="10sp"
+        android:paddingTop="10sp"
+        android:text="This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version." />
+
+    <Button
+        android:id="@+id/OkButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/ok_text" />
+
 </LinearLayout>

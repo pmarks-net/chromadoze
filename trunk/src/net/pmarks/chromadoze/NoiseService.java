@@ -17,12 +17,8 @@
 
 package net.pmarks.chromadoze;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 import junit.framework.Assert;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -31,6 +27,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 
 public class NoiseService extends Service {
     public static final int PERCENT_MSG = 1;
@@ -47,50 +45,25 @@ public class NoiseService extends Service {
 
     private Handler mPercentHandler;
 
-    // Fields for {start,stop}ForegroundCompat().  See:
-    // http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/app/ForegroundService.html
-    @SuppressWarnings("rawtypes")
-    private static final Class[] mStartForegroundSignature = new Class[] {
-        int.class, Notification.class};
-    @SuppressWarnings("rawtypes")
-    private static final Class[] mStopForegroundSignature = new Class[] {
-        boolean.class};
-    private NotificationManager mNM;
-    private Method mStartForeground;
-    private Method mStopForeground;
-    private Object[] mStartForegroundArgs = new Object[2];
-    private Object[] mStopForegroundArgs = new Object[1];
+    private static class PercentHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            Assert.assertEquals(PERCENT_MSG, msg.what);
+            updatePercent(msg.arg1);
+        }
+    }
 
     @Override
     public void onCreate() {
         // Set up a message handler in the main thread.
-        mPercentHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                Assert.assertEquals(PERCENT_MSG, msg.what);
-                updatePercent(msg.arg1);
-            }
-        };
-
+        mPercentHandler = new PercentHandler();
         mSampleShuffler = new SampleShuffler();
         mSampleGenerator = new SampleGenerator(this, mSampleShuffler);
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
         mWakeLock.acquire();
 
-        // Initialization junk for {start,stop}ForegroundCompat().
-        mNM = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        try {
-            mStartForeground = getClass().getMethod("startForeground",
-                    mStartForegroundSignature);
-            mStopForeground = getClass().getMethod("stopForeground",
-                    mStopForegroundSignature);
-        } catch (NoSuchMethodException e) {
-            // Running on an older platform.
-            mStartForeground = mStopForeground = null;
-        }
-
-        startForegroundCompat(NOTIFY_ID, makeNotify());
+        startForeground(NOTIFY_ID, makeNotify());
     }
 
     @Override
@@ -112,7 +85,7 @@ public class NoiseService extends Service {
         mPercentHandler.removeMessages(PERCENT_MSG);
         updatePercent(-1);
 
-        stopForegroundCompat(NOTIFY_ID);
+        stopForeground(true);
         mWakeLock.release();
     }
 
@@ -124,20 +97,19 @@ public class NoiseService extends Service {
 
     // Create an icon for the notification bar.
     private Notification makeNotify() {
-        int icon = R.drawable.stat_noise;
-        long when = System.currentTimeMillis();
-        Notification n = new Notification(icon, null, when);
-        n.flags |= Notification.FLAG_ONGOING_EVENT;
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(ChromaDoze.class);
+        stackBuilder.addNextIntent(new Intent(this, ChromaDoze.class));
+        PendingIntent contentIntent = stackBuilder.getPendingIntent(
+                0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Intent intent = new Intent(this, ChromaDoze.class);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        n.setLatestEventInfo(
-                getApplicationContext(),
-                getString(R.string.app_name),
-                getString(R.string.select_to_configure),
-                contentIntent);
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.stat_noise)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.select_to_configure))
+                .setContentIntent(contentIntent);
 
-        return n;
+        return mBuilder.build();
     }
 
     // Call updatePercent() from any thread.
@@ -162,53 +134,5 @@ public class NoiseService extends Service {
     public static void setPercentListener(NoiseServicePercentListener listener) {
         sPercentListener = listener;
         updatePercent(sLastPercent);
-    }
-
-    /**
-     * This is a wrapper around the new startForeground method, using the older
-     * APIs if it is not available.
-     */
-    void startForegroundCompat(int id, Notification notification) {
-        // If we have the new startForeground API, then use it.
-        if (mStartForeground != null) {
-            mStartForegroundArgs[0] = Integer.valueOf(id);
-            mStartForegroundArgs[1] = notification;
-            try {
-                mStartForeground.invoke(this, mStartForegroundArgs);
-            } catch (InvocationTargetException e) {
-                // Should not happen.
-            } catch (IllegalAccessException e) {
-                // Should not happen.
-            }
-            return;
-        }
-
-        // Fall back on the old API.
-        setForeground(true);
-        mNM.notify(id, notification);
-    }
-
-    /**
-     * This is a wrapper around the new stopForeground method, using the older
-     * APIs if it is not available.
-     */
-    void stopForegroundCompat(int id) {
-        // If we have the new stopForeground API, then use it.
-        if (mStopForeground != null) {
-            mStopForegroundArgs[0] = Boolean.TRUE;
-            try {
-                mStopForeground.invoke(this, mStopForegroundArgs);
-            } catch (InvocationTargetException e) {
-                // Should not happen.
-            } catch (IllegalAccessException e) {
-                // Should not happen.
-            }
-            return;
-        }
-
-        // Fall back on the old API.  Note to cancel BEFORE changing the
-        // foreground state, since we could be killed at that point.
-        mNM.cancel(id);
-        setForeground(false);
     }
 }

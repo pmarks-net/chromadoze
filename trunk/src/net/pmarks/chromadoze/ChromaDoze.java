@@ -17,29 +17,27 @@
 
 package net.pmarks.chromadoze;
 
-import android.app.Activity;
+import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class ChromaDoze extends Activity implements OnClickListener, NoiseServicePercentListener {
-    private static final int MENU_AMPWAVE = 1;
-    private static final int MENU_ABOUT = 2;
+import com.actionbarsherlock.app.SherlockActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+
+public class ChromaDoze extends SherlockActivity implements NoiseServicePercentListener {
+    private static final int MENU_PLAY_STOP = 1;
+    private static final int MENU_AMPWAVE = 2;
+    private static final int MENU_ABOUT = 3;
 
     private UIState mUiState;
     private EqualizerView mEqualizer;
-    private Button mStopButton;
     private TextView mStateText;
     private ProgressBar mPercentBar;
-
-    private String mStartString;
-    private String mStopString;
+    private Dialog mActiveDialog;
 
     private boolean mServiceActive;
 
@@ -48,14 +46,8 @@ public class ChromaDoze extends Activity implements OnClickListener, NoiseServic
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         mEqualizer = (EqualizerView)findViewById(R.id.EqualizerView);
-        mStopButton = (Button)findViewById(R.id.StopButton);
-        mStopButton.setOnClickListener(this);
         mStateText = (TextView)findViewById(R.id.StateText);
         mPercentBar = (ProgressBar)findViewById(R.id.PercentBar);
-
-        // Get strings.
-        mStartString = getString(R.string.start_button);
-        mStopString = getString(R.string.stop_button);
 
         mUiState = new UIState(getApplication());
 
@@ -67,6 +59,9 @@ public class ChromaDoze extends Activity implements OnClickListener, NoiseServic
     @Override
     protected void onPause() {
         super.onPause();
+
+        // Dismiss the active dialog, if any.
+        changeDialog(null);
 
         // If the equalizer is silent, stop the service.
         // This makes it harder to leave running accidentally.
@@ -89,35 +84,45 @@ public class ChromaDoze extends Activity implements OnClickListener, NoiseServic
 
         // Start receiving progress events.
         NoiseService.setPercentListener(this);
-        mUiState.setSendEnabled(mServiceActive);
-    }
-
-    public void onClick(View v) {
-        // Force the service into its expected state.
-        if (!mServiceActive) {
-            mUiState.startSending();
-        } else {
-            mUiState.stopSending();
-        }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave)).setIcon(
-                android.R.drawable.ic_menu_manage);;
-        menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu)).setIcon(
-                android.R.drawable.ic_menu_info_details);
-        return true;
+        menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop))
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave))
+            .setIcon(android.R.drawable.ic_menu_manage)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu))
+            .setIcon(android.R.drawable.ic_menu_info_details)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem item = menu.findItem(MENU_PLAY_STOP);
+        item.setIcon(mServiceActive ? R.drawable.av_stop : R.drawable.av_play);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+        case MENU_PLAY_STOP:
+            // Force the service into its expected state.
+            if (!mServiceActive) {
+                mUiState.startSending();
+            } else {
+                mUiState.stopSending();
+            }
+            return true;
         case MENU_AMPWAVE:
-            new WaveDialog(this, mUiState).show();
+            changeDialog(new WaveDialog(this, mUiState));
             return true;
         case MENU_ABOUT:
-            new AboutDialog(this).show();
+            changeDialog(new AboutDialog(this));
             return true;
         }
         return false;
@@ -125,19 +130,35 @@ public class ChromaDoze extends Activity implements OnClickListener, NoiseServic
 
     public void onNoiseServicePercentChange(int percent) {
         int vis;
+        boolean newServiceActive;
         if (percent < 0) {
-            mServiceActive = false;
+            newServiceActive = false;
             vis = View.INVISIBLE;
         } else if (percent < 100) {
-            mServiceActive = true;
+            newServiceActive = true;
             mPercentBar.setProgress(percent);
             vis = View.VISIBLE;
         } else {
-            mServiceActive = true;
+            newServiceActive = true;
             vis = View.INVISIBLE;
         }
         mPercentBar.setVisibility(vis);
         mStateText.setVisibility(vis);
-        mStopButton.setText(mServiceActive ? mStopString : mStartString);
+        if (mServiceActive != newServiceActive) {
+            mServiceActive = newServiceActive;
+            supportInvalidateOptionsMenu();
+        }
+
     }
+
+    private void changeDialog(Dialog d) {
+        if (mActiveDialog != null) {
+            mActiveDialog.dismiss();
+        }
+        mActiveDialog = d;
+        if (d != null) {
+            d.show();
+        }
+    }
+
 }
