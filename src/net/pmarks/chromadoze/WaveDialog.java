@@ -28,7 +28,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 public class WaveDialog extends Dialog implements OnSeekBarChangeListener {
-    private UIState mUiState;
+    private final UIState mUiState;
     private SeekBar mMinVolSeek;
     private TextView mMinVolText;
     private SeekBar mPeriodSeek;
@@ -45,7 +45,7 @@ public class WaveDialog extends Dialog implements OnSeekBarChangeListener {
         setContentView(R.layout.wave);
         setTitle(R.string.amp_wave);
 
-        getWindow().setLayout(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT);
+        getWindow().setLayout(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 
         Button okButton = (Button) findViewById(R.id.WaveOkButton);
         okButton.setOnClickListener(new View.OnClickListener() {

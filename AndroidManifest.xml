@@ -1,15 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="net.pmarks.chromadoze" android:versionCode="7" android:versionName="1.1.1">
-    <application android:label="@string/app_name" android:icon="@drawable/chromadoze_icon">
-        <activity android:name=".ChromaDoze" android:label="@string/app_name">
+    package="net.pmarks.chromadoze"
+    android:versionCode="8"
+    android:versionName="2.0-dev" >
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/chromadoze_icon"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Sherlock" >
+        <activity
+            android:name=".ChromaDoze"
+            android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <service android:name=".NoiseService" />
     </application>
-    <uses-sdk android:minSdkVersion="3" android:targetSdkVersion="4"/>
+
+    <uses-sdk
+        android:minSdkVersion="7"
+        android:targetSdkVersion="16" />
+
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
 </manifest>
