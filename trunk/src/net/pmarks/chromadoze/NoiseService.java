@@ -98,13 +98,13 @@ public class NoiseService extends Service {
     // Create an icon for the notification bar.
     private Notification makeNotify() {
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(ChromaDoze.class);
-        stackBuilder.addNextIntent(new Intent(this, ChromaDoze.class));
+        stackBuilder.addNextIntentWithParentStack(new Intent(this, ChromaDoze.class));
         PendingIntent contentIntent = stackBuilder.getPendingIntent(
                 0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.drawable.stat_noise)
+                .setSmallIcon(R.drawable.ic_stat_bars)
+                .setWhen(0)
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.select_to_configure))
                 .setContentIntent(contentIntent);
