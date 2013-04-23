@@ -114,6 +114,7 @@ public class EqualizerView extends android.view.View implements LockListener {
         case MotionEvent.ACTION_DOWN:
             mLastX = event.getX();
             mLastY = event.getY();
+            break;
         case MotionEvent.ACTION_UP:
         case MotionEvent.ACTION_MOVE:
             break;
