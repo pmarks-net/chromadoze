@@ -17,6 +17,10 @@
 
 package net.pmarks.chromadoze;
 
+import java.util.ArrayList;
+import java.util.Locale;
+
+import junit.framework.Assert;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,6 +36,9 @@ public class UIState {
 
     private int mMinVol = 100;
     private int mPeriod = 18;  // Maps to 1 second
+    private boolean mLocked = false;
+    private boolean mLockBusy = false;
+    private final ArrayList<LockListener> mLockListeners = new ArrayList<LockListener>();
 
     public UIState(Context context) {
         mContext = context;
@@ -43,6 +50,7 @@ public class UIState {
         }
         pref.putInt("minVol", mMinVol);
         pref.putInt("period", mPeriod);
+        pref.putBoolean("locked", mLocked);
     }
 
     public void loadState(SharedPreferences pref) {
@@ -51,6 +59,21 @@ public class UIState {
         }
         mMinVol = pref.getInt("minVol", 100);
         mPeriod = pref.getInt("period", 18);
+        mLocked = pref.getBoolean("locked", false);
+    }
+
+    public void addLockListener(LockListener l) {
+        mLockListeners.add(l);
+    }
+
+    public void clearLockListeners() {
+        mLockListeners.clear();
+    }
+
+    private void notifyLockListeners(LockListener.LockEvent e) {
+        for (LockListener l : mLockListeners) {
+            l.onLockStateChange(e);
+        }
     }
 
     public void startSending() {
@@ -126,10 +149,34 @@ public class UIState {
     public String getPeriodText() {
         float s = getPeriodSeconds();
         if (s >= 1f) {
-            return String.format("%.2g sec", s);
+            return String.format(Locale.getDefault(), "%.2g sec", s);
         } else {
-            return String.format("%d ms", Math.round(s * 1000));
+            return String.format(Locale.getDefault(), "%d ms", Math.round(s * 1000));
         }
+    }
+
+    public void toggleLocked() {
+        mLocked = !mLocked;
+        if (!mLocked) {
+            mLockBusy = false;
+        }
+        notifyLockListeners(LockListener.LockEvent.TOGGLE);
+    }
+
+    public boolean getLocked() {
+        return mLocked;
+    }
+
+    public void setLockBusy(boolean busy) {
+        Assert.assertTrue(mLocked);
+        if (mLockBusy != busy) {
+            mLockBusy = busy;
+            notifyLockListeners(LockListener.LockEvent.BUSY);
+        }
+    }
+
+    public boolean getLockBusy() {
+        return mLockBusy;
     }
 
     private float getPeriodSeconds() {
