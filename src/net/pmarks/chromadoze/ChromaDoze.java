@@ -19,6 +19,8 @@ package net.pmarks.chromadoze;
 
 import android.app.Dialog;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff.Mode;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -28,10 +30,11 @@ import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 
-public class ChromaDoze extends SherlockActivity implements NoiseServicePercentListener {
+public class ChromaDoze extends SherlockActivity implements NoiseServicePercentListener, LockListener {
     private static final int MENU_PLAY_STOP = 1;
-    private static final int MENU_AMPWAVE = 2;
-    private static final int MENU_ABOUT = 3;
+    private static final int MENU_LOCK = 2;
+    private static final int MENU_AMPWAVE = 3;
+    private static final int MENU_ABOUT = 4;
 
     private UIState mUiState;
     private EqualizerView mEqualizer;
@@ -71,6 +74,7 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
 
         // Stop receiving progress events.
         NoiseService.setPercentListener(null);
+        mUiState.clearLockListeners();
 
         SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
         pref.clear();
@@ -84,11 +88,15 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
 
         // Start receiving progress events.
         NoiseService.setPercentListener(this);
+        mUiState.addLockListener(this);
+        mUiState.addLockListener(mEqualizer);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop))
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock))
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
         menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave))
             .setIcon(android.R.drawable.ic_menu_manage)
@@ -102,9 +110,27 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        MenuItem item = menu.findItem(MENU_PLAY_STOP);
-        item.setIcon(mServiceActive ? R.drawable.av_stop : R.drawable.av_play);
+        menu.findItem(MENU_PLAY_STOP)
+            .setIcon(mServiceActive ? R.drawable.av_stop : R.drawable.av_play);
+        menu.findItem(MENU_LOCK).setIcon(getLockIcon());
         return super.onPrepareOptionsMenu(menu);
+    }
+
+    public void onLockStateChange(LockEvent e) {
+        // Redraw the lock icon for both event types.
+        supportInvalidateOptionsMenu();
+    }
+
+    // Get the lock icon which reflects the current action.
+    private Drawable getLockIcon() {
+        Drawable d = getResources().getDrawable(mUiState.getLocked() ?
+                R.drawable.device_access_not_secure : R.drawable.device_access_secure);
+        if (mUiState.getLockBusy()) {
+            d.setColorFilter(0xFFFF4444, Mode.SRC_IN);
+        } else {
+            d.clearColorFilter();
+        }
+        return d;
     }
 
     @Override
@@ -117,6 +143,10 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
             } else {
                 mUiState.stopSending();
             }
+            return true;
+        case MENU_LOCK:
+            mUiState.toggleLocked();
+            supportInvalidateOptionsMenu();
             return true;
         case MENU_AMPWAVE:
             changeDialog(new WaveDialog(this, mUiState));
@@ -148,7 +178,6 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
             mServiceActive = newServiceActive;
             supportInvalidateOptionsMenu();
         }
-
     }
 
     private void changeDialog(Dialog d) {
@@ -160,5 +189,4 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
             d.show();
         }
     }
-
 }

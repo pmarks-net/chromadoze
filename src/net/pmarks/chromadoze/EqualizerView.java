@@ -18,7 +18,6 @@
 package net.pmarks.chromadoze;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -27,11 +26,12 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
-public class EqualizerView extends android.view.View {
+public class EqualizerView extends android.view.View implements LockListener {
     public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
-    private Paint mBarColor[] = new Paint[BAND_COUNT];
-    private Paint mBaseColor[] = new Paint[2];
+    private final Paint mBarColor[] = new Paint[BAND_COUNT];
+    private final Paint mBaseColor[] = new Paint[4];
+    private final Paint mWhite = new Paint();
 
     private UIState mUiState;
 
@@ -51,38 +51,27 @@ public class EqualizerView extends android.view.View {
     }
 
     private void makeColors() {
-        Bitmap bmp = null;
-        try {
-            bmp = BitmapFactory.decodeResource(getResources(), R.drawable.spectrum);
-        } catch (Resources.NotFoundException e) {
-        }
-
-        if (bmp != null) {
-            for (int i = 0; i < BAND_COUNT; i++) {
-                Paint p = new Paint();
-                int x = (bmp.getWidth() - 1) * i / (BAND_COUNT - 1);
-                p.setColor(bmp.getPixel(x, 0));
-                mBarColor[i] = p;
-            }
-        } else {
-            // HACK: The layout editor can't see my resource, so fill in red.
+        Bitmap bmp = BitmapFactory.decodeResource(getResources(), R.drawable.spectrum);
+        for (int i = 0; i < BAND_COUNT; i++) {
             Paint p = new Paint();
-            p.setColor(Color.RED);
-            for (int i = 0; i < BAND_COUNT; i++) {
-                mBarColor[i] = p;
-            }
+            int x = (bmp.getWidth() - 1) * i / (BAND_COUNT - 1);
+            p.setColor(bmp.getPixel(x, 0));
+            mBarColor[i] = p;
         }
 
-        Paint p = new Paint();
-        p.setColor(Color.rgb(100, 100, 100));
-        mBaseColor[0] = p;
-        p = new Paint();
-        p.setColor(Color.rgb(75, 75, 75));
-        mBaseColor[1] = p;
+        int i = 0;
+        for (int v : new int[]{100, 75, 55, 50}) {
+            Paint p = new Paint();
+            p.setColor(Color.rgb(v, v,v));
+            mBaseColor[i++] = p;
+        }
+
+        mWhite.setColor(Color.WHITE);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        final boolean isLocked = mUiState.getLocked();
         for (int i = 0; i < BAND_COUNT; i++) {
             float bar = mUiState != null ? mUiState.getBar(i) : .5f;
             float startX = mBarWidth * i;
@@ -93,24 +82,38 @@ public class EqualizerView extends android.view.View {
             if (bar > 0) {
                 canvas.drawRect(startX, startY, stopX, midY, mBarColor[i]);
             }
-            canvas.drawRect(startX, midY, stopX, mHeight, mBaseColor[i % 2]);
+
+            // Lower the brightness and contrast when locked.
+            canvas.drawRect(startX, midY, stopX, mHeight,
+                    mBaseColor[i % 2 + (isLocked ? 2 : 0)]);
         }
 
-        Paint p = new Paint();
-        p.setColor(Color.WHITE);
-        canvas.drawLine(0, mZeroLineY, mWidth, mZeroLineY, p);
+        canvas.drawLine(0, mZeroLineY, mWidth, mZeroLineY, mWhite);
     }
 
-    float mLastX;
-    float mLastY;
+    private float mLastX;
+    private float mLastY;
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (mUiState.getLocked()) {
+            switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                mUiState.setLockBusy(true);
+                return true;
+            case MotionEvent.ACTION_UP:
+                mUiState.setLockBusy(false);
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                return true;
+            }
+            return false;
+        }
+
         switch (event.getAction()) {
         case MotionEvent.ACTION_DOWN:
             mLastX = event.getX();
             mLastY = event.getY();
-            break;
         case MotionEvent.ACTION_UP:
         case MotionEvent.ACTION_MOVE:
             break;
@@ -198,5 +201,12 @@ public class EqualizerView extends android.view.View {
         }
         // Set the Y endpoint.
         mUiState.setBar(stopBand, yToBar(stopY));
+    }
+
+    public void onLockStateChange(LockEvent e) {
+        // Only spend time redrawing if this is an on/off event.
+        if (e == LockEvent.TOGGLE) {
+            invalidate();
+        }
     }
 }
