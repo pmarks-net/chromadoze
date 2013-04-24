@@ -124,7 +124,7 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
     // Get the lock icon which reflects the current action.
     private Drawable getLockIcon() {
         Drawable d = getResources().getDrawable(mUiState.getLocked() ?
-                R.drawable.device_access_not_secure : R.drawable.device_access_secure);
+                R.drawable.action_unlock : R.drawable.action_lock);
         if (mUiState.getLockBusy()) {
             d.setColorFilter(0xFFFF4444, Mode.SRC_IN);
         } else {
