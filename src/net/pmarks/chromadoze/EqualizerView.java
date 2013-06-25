@@ -71,7 +71,7 @@ public class EqualizerView extends android.view.View implements LockListener {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        final boolean isLocked = mUiState.getLocked();
+        final boolean isLocked = mUiState != null ? mUiState.getLocked() : false;
         for (int i = 0; i < BAND_COUNT; i++) {
             float bar = mUiState != null ? mUiState.getBar(i) : .5f;
             float startX = mBarWidth * i;
