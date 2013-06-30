@@ -39,9 +39,9 @@ public class SpectrumData implements Parcelable {
     // The frequency of the edges between each bar.
     public static final int EDGE_FREQS[] = calculateEdgeFreqs();
 
-    private float[] mData;
-    private float mMinVol;
-    private float mPeriod;
+    private final float[] mData;
+    private final float mMinVol;
+    private final float mPeriod;
 
     private static int[] calculateEdgeFreqs() {
         int[] edgeFreqs = new int[BAND_COUNT + 1];
@@ -95,7 +95,9 @@ public class SpectrumData implements Parcelable {
     }
 
     private void subFill(float[] out, float setValue, int startFreq, int limitFreq, int maxFreq) {
-        for (int i = startFreq * out.length / maxFreq; i < limitFreq * out.length / maxFreq; i++) {
+        // This min() applies if the sample rate is below 40kHz.
+        int limitIndex = Math.min(out.length, limitFreq * out.length / maxFreq);
+        for (int i = startFreq * out.length / maxFreq; i < limitIndex; i++) {
             out[i] = setValue;
         }
     }

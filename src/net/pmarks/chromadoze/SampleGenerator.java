@@ -23,23 +23,26 @@ import android.os.Process;
 import edu.emory.mathcs.jtransforms.dct.FloatDCT_1D;
 
 public class SampleGenerator {
-    private Handler mHandler;
-    private Worker mWorkerThread;
+    private final Handler mHandler;
+    private final Worker mWorkerThread;
     private SpectrumData mPendingSpectrum;
-    private NoiseService mNoiseService;
-    private SampleShuffler mSampleShuffler;
+    private final NoiseService mNoiseService;
+    private final AudioParams mParams;
+    private final SampleShuffler mSampleShuffler;
 
     private int mLastDctSize = -1;
     private FloatDCT_1D mDct;
-    private XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
+    private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
 
     // Chunk-making progress:
     private SpectrumData mSpectrum;
-    private SampleGeneratorState mState;
+    private final SampleGeneratorState mState;
 
     // 'random' will only be used from one thread.
-    public SampleGenerator(NoiseService noiseService, SampleShuffler sampleShuffler) {
+    public SampleGenerator(NoiseService noiseService, AudioParams params,
+            SampleShuffler sampleShuffler) {
         mNoiseService = noiseService;
+        mParams = params;
         mSampleShuffler = sampleShuffler;
         mState = new SampleGeneratorState();
 
@@ -76,6 +79,7 @@ public class SampleGenerator {
             super("SampleGeneratorThread");
         }
 
+        @Override
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             Looper.prepare();
@@ -97,7 +101,7 @@ public class SampleGenerator {
         }
     }
 
-    private Runnable startNewChunks = new Runnable() {
+    private final Runnable startNewChunks = new Runnable() {
         public void run() {
             SpectrumData spectrum = popPendingSpectrum();
             if (spectrum == null || spectrum.sameSpectrum(mSpectrum)) {
@@ -111,7 +115,7 @@ public class SampleGenerator {
         }
     };
 
-    private Runnable makeNextChunk = new Runnable() {
+    private final Runnable makeNextChunk = new Runnable() {
         public void run() {
             if (mState.done()) {
                 // No chunks left to make.
@@ -133,7 +137,7 @@ public class SampleGenerator {
 
     };
 
-    private Runnable stopLooping = new Runnable() {
+    private final Runnable stopLooping = new Runnable() {
         public void run() {
             mHandler.removeCallbacks(startNewChunks);
             mHandler.removeCallbacks(makeNextChunk);
@@ -148,7 +152,7 @@ public class SampleGenerator {
         }
         float[] dctData = new float[dctSize];
 
-        mSpectrum.fill(dctData, SampleShuffler.SAMPLE_RATE);
+        mSpectrum.fill(dctData, mParams.SAMPLE_RATE);
 
         // Multiply by a block of white noise.
         for (int i = 0; i < dctSize;) {

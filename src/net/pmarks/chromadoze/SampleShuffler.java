@@ -19,8 +19,6 @@ package net.pmarks.chromadoze;
 
 import java.util.ArrayList;
 
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Process;
 
@@ -45,10 +43,10 @@ individual streams below 32767 / sqrt(2), or ~23170.
 class SampleShuffler {
     public static final int SINE_LEN = 1 << 9;
     public static final int FADE_LEN = SINE_LEN + 1;
-    public static final int MIN_AUDIO_BUFFER_LEN = 12288;
-    public static final int SAMPLE_RATE = 44100;
     public static final float BASE_AMPLITUDE = 20000;
     public static final float CLIP_AMPLITUDE = 23000;  // 32K/sqrt(2)
+
+    private final AudioParams mParams;
 
     private ArrayList<AudioChunk> mAudioChunks = null;
     private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
@@ -71,11 +69,12 @@ class SampleShuffler {
 
     private final PlaybackThread mPlaybackThread;
 
-    public SampleShuffler() {
+    public SampleShuffler(AudioParams params) {
+        mParams = params;
         mSine = makeSineCurve();
 
         // Start playing silence until real data arrives.
-        exchangeChunk(new AudioChunk(new float[MIN_AUDIO_BUFFER_LEN]), true);
+        exchangeChunk(new AudioChunk(new float[mParams.BUF_SHORTS]), true);
 
         mPlaybackThread = new PlaybackThread();
         mPlaybackThread.start();
@@ -406,7 +405,7 @@ class SampleShuffler {
 
                 // When period == 1 sec, SAMPLE_RATE iterations should cover
                 // SINE_PERIOD virtual points.
-                mSpeed = (int)(SINE_PERIOD / (period * SAMPLE_RATE));
+                mSpeed = (int)(SINE_PERIOD / (period * mParams.SAMPLE_RATE));
             }
 
             mMinVol = minVol;
@@ -436,8 +435,6 @@ class SampleShuffler {
 
     private class PlaybackThread extends Thread {
 
-        private int mAudioBufferLen;
-
         PlaybackThread() {
             super("SampleShufflerThread");
         }
@@ -446,26 +443,12 @@ class SampleShuffler {
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
 
-            // Possibly increase the buffer size, if our default is too small.
-            mAudioBufferLen = Math.max(
-                    AudioTrack.getMinBufferSize(
-                            SAMPLE_RATE,
-                            AudioFormat.CHANNEL_OUT_MONO,
-                            AudioFormat.ENCODING_PCM_16BIT),
-                    MIN_AUDIO_BUFFER_LEN);
-
-            AudioTrack track = new AudioTrack(
-                    AudioManager.STREAM_MUSIC,
-                    SAMPLE_RATE,
-                    AudioFormat.CHANNEL_OUT_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT,
-                    mAudioBufferLen,
-                    AudioTrack.MODE_STREAM);
-
+            AudioTrack track = mParams.makeAudioTrack();
             track.play();
 
             try {
-                short[] buf = new short[mAudioBufferLen / 2];
+                // Write half of the AudioTrack's buffer per iteration.
+                short[] buf = new short[mParams.BUF_SHORTS / 2];
                 AmpWave oldAmpWave = null;
                 while (true) {
                     AmpWave newAmpWave = fillBuffer(buf);

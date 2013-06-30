@@ -57,8 +57,9 @@ public class NoiseService extends Service {
     public void onCreate() {
         // Set up a message handler in the main thread.
         mPercentHandler = new PercentHandler();
-        mSampleShuffler = new SampleShuffler();
-        mSampleGenerator = new SampleGenerator(this, mSampleShuffler);
+        AudioParams params = new AudioParams();
+        mSampleShuffler = new SampleShuffler(params);
+        mSampleGenerator = new SampleGenerator(this, params, mSampleShuffler);
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
         mWakeLock.acquire();
