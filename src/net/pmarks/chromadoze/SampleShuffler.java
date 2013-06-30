@@ -74,7 +74,7 @@ class SampleShuffler {
         mSine = makeSineCurve();
 
         // Start playing silence until real data arrives.
-        exchangeChunk(new AudioChunk(new float[mParams.BUF_SHORTS]), true);
+        exchangeChunk(new AudioChunk(new float[FADE_LEN * 2]), true);
 
         mPlaybackThread = new PlaybackThread();
         mPlaybackThread.start();
@@ -146,6 +146,9 @@ class SampleShuffler {
         }
 
         public void buildPcmData(float volumeFactor) {
+            if (mLength < FADE_LEN * 2) {
+                throw new IllegalArgumentException("Undersized chunk: " + mLength);
+            }
             mPcmData = new short[mLength];
             for (int i = 0; i < FADE_LEN; i++) {
                 // Fade in using sin(x), x=[0,pi/2]
@@ -447,8 +450,9 @@ class SampleShuffler {
             track.play();
 
             try {
-                // Write half of the AudioTrack's buffer per iteration.
-                short[] buf = new short[mParams.BUF_SHORTS / 2];
+                // Aim to write half of the AudioTrack's buffer per iteration,
+                // but FADE_LEN is the bare minimum to avoid errors.
+                short[] buf = new short[Math.max(mParams.BUF_SHORTS / 2, FADE_LEN)];
                 AmpWave oldAmpWave = null;
                 while (true) {
                     AmpWave newAmpWave = fillBuffer(buf);
