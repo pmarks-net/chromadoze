@@ -21,6 +21,7 @@ import java.util.ArrayList;
 
 import android.media.AudioTrack;
 import android.os.Process;
+import android.util.Log;
 
 /* Crossfade notes:
 
@@ -52,8 +53,6 @@ class SampleShuffler {
     private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
     private int mLastRandomChunk = -1;
 
-    private boolean mStopThread = false;
-
     private float mGlobalVolumeFactor;
 
     // Sine wave, 4*SINE_LEN points, from [0, 2pi).
@@ -81,9 +80,7 @@ class SampleShuffler {
     }
 
     public void stopThread() {
-        synchronized (this) {
-            mStopThread = true;
-        }
+        mPlaybackThread.stopPlaying();
         try {
             mPlaybackThread.join();
         } catch (InterruptedException e) {
@@ -113,10 +110,6 @@ class SampleShuffler {
             out[i] = -out[i - 2*SINE_LEN];
         }
         return out;
-    }
-
-    private static class StopThread extends Exception {
-        private static final long serialVersionUID = 2439290876882896774L;
     }
 
     private class AudioChunk {
@@ -289,13 +282,9 @@ class SampleShuffler {
                 // Grab the chunk of data that would've been played if it
                 // weren't for this interruption.  Later, we'll cross-fade it
                 // with the new data to avoid pops.
-                try {
-                    short[] peek = new short[FADE_LEN];
-                    this.fillBuffer(peek);
-                    mAlternateFuture = peek;
-                } catch (StopThread e) {
-                    // Playback thread will handle this later.
-                }
+                short[] peek = new short[FADE_LEN];
+                this.fillBuffer(peek);
+                mAlternateFuture = peek;
             }
             resetFillState(null);
         }
@@ -307,11 +296,7 @@ class SampleShuffler {
     }
 
     // Returns: the current mAmpWave.
-    private synchronized AmpWave fillBuffer(short[] out) throws StopThread {
-        if (mStopThread) {
-            throw new StopThread();
-        }
-
+    private synchronized AmpWave fillBuffer(short[] out) {
         if (mChunk0 == null) {
             // This should only happen after a reset.
             mChunk0 = getRandomChunk();
@@ -442,28 +427,53 @@ class SampleShuffler {
             super("SampleShufflerThread");
         }
 
+        private boolean mPreventStart = false;
+        private AudioTrack mTrack;
+
+        private synchronized boolean startPlaying() {
+            if (mPreventStart || mTrack != null) {
+                return false;
+            }
+            mTrack = mParams.makeAudioTrack();
+            mTrack.play();
+            return true;
+        }
+
+        public synchronized void stopPlaying() {
+            if (mTrack == null) {
+                mPreventStart = true;
+            } else {
+                mTrack.stop();
+            }
+        }
+
         @Override
         public void run() {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
 
-            AudioTrack track = mParams.makeAudioTrack();
-            track.play();
-
-            try {
-                // Aim to write half of the AudioTrack's buffer per iteration,
-                // but FADE_LEN is the bare minimum to avoid errors.
-                short[] buf = new short[Math.max(mParams.BUF_SHORTS / 2, FADE_LEN)];
-                AmpWave oldAmpWave = null;
-                while (true) {
-                    AmpWave newAmpWave = fillBuffer(buf);
-                    newAmpWave.copyOldPosition(oldAmpWave);
-                    newAmpWave.mutateBuffer(buf);
-                    track.write(buf, 0, buf.length);
-                    oldAmpWave = newAmpWave;
-                }
-            } catch (StopThread e) {
+            if (!startPlaying()) {
+                return;
             }
-            track.release();
+
+            // Aim to write half of the AudioTrack's buffer per iteration,
+            // but FADE_LEN is the bare minimum to avoid errors.
+            short[] buf = new short[Math.max(mParams.BUF_SHORTS / 2, FADE_LEN)];
+            AmpWave oldAmpWave = null;
+            int result;
+            do {
+                AmpWave newAmpWave = fillBuffer(buf);
+                newAmpWave.copyOldPosition(oldAmpWave);
+                newAmpWave.mutateBuffer(buf);
+                oldAmpWave = newAmpWave;
+                // AudioTrack will write everything, unless it's been stopped.
+                result = mTrack.write(buf, 0, buf.length);
+            } while (result == buf.length);
+
+            if (result < 0) {
+                Log.w("PlaybackThread", "write() failed: " + result);
+            }
+
+            mTrack.release();
         }
     }
 }
