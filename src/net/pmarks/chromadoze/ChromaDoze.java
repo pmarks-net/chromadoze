@@ -22,15 +22,15 @@ import android.content.SharedPreferences;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBarActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.SherlockActivity;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
-
-public class ChromaDoze extends SherlockActivity implements NoiseServicePercentListener, LockListener {
+public class ChromaDoze extends ActionBarActivity implements NoiseServicePercentListener, LockListener {
     private static final int MENU_PLAY_STOP = 1;
     private static final int MENU_LOCK = 2;
     private static final int MENU_AMPWAVE = 3;
@@ -94,16 +94,21 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop))
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock))
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave))
-            .setIcon(android.R.drawable.ic_menu_manage)
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu))
-            .setIcon(android.R.drawable.ic_menu_info_details)
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        MenuItem mi;
+
+        mi = menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop));
+        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
+
+        mi = menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock));
+        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
+
+        mi = menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave));
+        mi.setIcon(android.R.drawable.ic_menu_manage);
+        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
+
+        mi = menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu));
+        mi.setIcon(android.R.drawable.ic_menu_info_details);
+        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -116,6 +121,7 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
         return super.onPrepareOptionsMenu(menu);
     }
 
+    @Override
     public void onLockStateChange(LockEvent e) {
         // Redraw the lock icon for both event types.
         supportInvalidateOptionsMenu();
@@ -158,6 +164,7 @@ public class ChromaDoze extends SherlockActivity implements NoiseServicePercentL
         return false;
     }
 
+    @Override
     public void onNoiseServicePercentChange(int percent) {
         int vis;
         boolean newServiceActive;
