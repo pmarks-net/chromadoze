@@ -37,7 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="10sp"
-        android:text="JTransforms © 2009 Piotr Wendykier\nActionBarSherlock © 2013 Jake Wharton" />
+        android:text="JTransforms © 2009 Piotr Wendykier" />
 
     <TextView
         android:layout_width="wrap_content"

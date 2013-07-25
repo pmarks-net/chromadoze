@@ -4,25 +4,29 @@ Here's how to import my project from the SVN tree, using the ADT bundle:
 - Android > Android Project from Existing Code
 - Browse for SVN trunk/ directory
 
-I ran into this transient error:
-"The project cannot be built until build path errors are resolved"
-I was able to fix it using "Project > Clean..."
+Enable the Support Libraries:
 
-Be sure to set Eclipse to use 4-space soft tabs:
-- Window > Preferences
-- Search for "space"
-- Change in 3 places: General, Java, and XML.
+- File > Import...
+- Existing Android Code Into Workspace
+- Browse to: adt-bundle-.../sdk/extras/android/support/v7/appcompat
+- Finish
 
-Enable the Support Library:
-- Right-click on ChromaDoze > Android Tools > Add Support Library...
+- Under the new android-support-v7-appcompat project:
+  + expand libs/
+    - Right-click android-support-v4.jar
+      + Build Path > Add to Build Path
+    - Right-click android-support-v7-appcompat.jar
+      + Build Path > Add to Build Path
+  + Right-click project
+  + Build Path > Configure Build Path
+    - Check android-support-v7-appcompat.jar
+    - Check android-support-v4.jar
+    - Uncheck Android Dependencies
 
-Import ActionBarSherlock:
-- Download from http://actionbarsherlock.com/
-- File > New > Project...
-- Android > Android Project from Existing Code
-- Root directory: .../actionbarsherlock
+- Right-click ChromaDoze > Properties
+- Android > Library > Add...
+- Select android-support-v7-appcompat, OK.
 
-Make ChromaDoze depend on ActionBarSherlock:
-- Right-click on ChromaDoze -> Properties
-- Android > [Library] > Add...
-- Select actionbarsherlock
+Optional: enable Proguard, to build a smaller .apk
+- Edit project.properties, and uncomment proguard.config
+- Note that my proguard-project.txt disables obfuscation.
