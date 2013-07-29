@@ -17,6 +17,8 @@
 
 package net.pmarks.chromadoze;
 
+import java.util.ArrayList;
+
 import junit.framework.Assert;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -35,7 +37,8 @@ public class NoiseService extends Service {
 
     // These must be accessed only from the main thread.
     private static int sLastPercent = -1;
-    private static NoiseServicePercentListener sPercentListener = null;
+    private static final ArrayList<NoiseServicePercentListener> sPercentListeners =
+            new ArrayList<NoiseServicePercentListener>();
 
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
@@ -124,16 +127,22 @@ public class NoiseService extends Service {
     // If connected, notify the main activity of our progress.
     // This must run in the main thread.
     private static void updatePercent(int percent) {
-        if (sPercentListener != null) {
-            sPercentListener.onNoiseServicePercentChange(percent);
+        for (NoiseServicePercentListener listener : sPercentListeners) {
+            listener.onNoiseServicePercentChange(percent);
         }
         sLastPercent = percent;
     }
 
     // Connect the main activity so it receives progress updates.
     // This must run in the main thread.
-    public static void setPercentListener(NoiseServicePercentListener listener) {
-        sPercentListener = listener;
-        updatePercent(sLastPercent);
+    public static void addPercentListener(NoiseServicePercentListener listener) {
+        sPercentListeners.add(listener);
+        listener.onNoiseServicePercentChange(sLastPercent);
+    }
+
+    public static void removePercentListener(NoiseServicePercentListener listener) {
+        if (!sPercentListeners.remove(listener)) {
+            throw new IllegalStateException();
+        }
     }
 }

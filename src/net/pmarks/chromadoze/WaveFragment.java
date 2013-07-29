@@ -17,61 +17,63 @@
 
 package net.pmarks.chromadoze;
 
-import android.app.Dialog;
-import android.content.Context;
+import android.app.Activity;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup.LayoutParams;
-import android.widget.Button;
+import android.view.ViewGroup;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-public class WaveDialog extends Dialog implements OnSeekBarChangeListener {
-    private final UIState mUiState;
+public class WaveFragment extends Fragment implements OnSeekBarChangeListener {
+    private UIState mUiState;
     private SeekBar mMinVolSeek;
     private TextView mMinVolText;
     private SeekBar mPeriodSeek;
     private TextView mPeriodText;
 
-    public WaveDialog(Context context, UIState uiState) {
-        super(context);
-        mUiState = uiState;
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mUiState = ((ChromaDoze)activity).getUIState();
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.wave);
-        setTitle(R.string.amp_wave);
+    public void onResume() {
+        super.onResume();
+        FragmentConfig cfg = new FragmentConfig();
+        cfg.title = getString(R.string.amp_wave);
+        ((ChromaDoze)getActivity()).setFragmentConfig(cfg);
+    }
 
-        getWindow().setLayout(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.wave_fragment, container, false);
 
-        Button okButton = (Button) findViewById(R.id.WaveOkButton);
-        okButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                dismiss();
-            }
-        });
-
-        mMinVolSeek = (SeekBar) findViewById(R.id.MinVolSeek);
+        mMinVolSeek = (SeekBar) v.findViewById(R.id.MinVolSeek);
         mMinVolSeek.setOnSeekBarChangeListener(this);
         mMinVolSeek.setProgress(mUiState.getMinVol());
 
-        mMinVolText = (TextView) findViewById(R.id.MinVolText);
+        mMinVolText = (TextView) v.findViewById(R.id.MinVolText);
         mMinVolText.setText(mUiState.getMinVolText());
 
-        mPeriodSeek = (SeekBar) findViewById(R.id.PeriodSeek);
+        mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
         mPeriodSeek.setOnSeekBarChangeListener(this);
         mPeriodSeek.setProgress(mUiState.getPeriod());
 
-        mPeriodText = (TextView) findViewById(R.id.PeriodText);
+        mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
         mPeriodText.setText(mUiState.getPeriodText());
 
         // When the volume is at 100%, disable the period bar.
         mPeriodSeek.setEnabled(mUiState.getMinVol() != 100);
+
+        return v;
     }
 
+    @Override
     public void onProgressChanged(SeekBar seekBar, int progress,
             boolean fromUser) {
         if (!fromUser) {
@@ -87,9 +89,11 @@ public class WaveDialog extends Dialog implements OnSeekBarChangeListener {
         }
     }
 
+    @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
     }
 
+    @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
     }
 }

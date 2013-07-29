@@ -7,7 +7,6 @@
     <string name="about_menu">About</string>
     <string name="amp_wave">Amplitude Wave</string>
     <string name="generating">Generating IDCT blocks:&#160;</string>
-    <string name="ok_text">&#160; OK &#160;</string>
     <string name="play_stop">Play/Stop</string>
     <string name="lock_unlock">Lock/Unlock Input</string>
 </resources>
