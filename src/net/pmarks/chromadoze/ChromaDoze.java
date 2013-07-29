@@ -53,6 +53,12 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
         mUiState.loadState(pref);
 
+        /* XXX
+         * Track down these two bugs before releasing anything:
+         * - About > Rotate > Back > Crash!
+         * - Amp Wave > Rotate > Crash!
+         */
+
         changeFragment(new MainFragment(), false);
     }
 
