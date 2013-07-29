@@ -17,18 +17,20 @@
 
 package net.pmarks.chromadoze;
 
-import android.app.Dialog;
+import android.annotation.TargetApi;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 
 public class ChromaDoze extends ActionBarActivity implements NoiseServicePercentListener, LockListener {
     private static final int MENU_PLAY_STOP = 1;
@@ -37,10 +39,7 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
     private static final int MENU_ABOUT = 4;
 
     private UIState mUiState;
-    private EqualizerView mEqualizer;
-    private TextView mStateText;
-    private ProgressBar mPercentBar;
-    private Dialog mActiveDialog;
+    private FragmentConfig mFragmentConfig = new FragmentConfig();
 
     private boolean mServiceActive;
 
@@ -48,23 +47,26 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        mEqualizer = (EqualizerView)findViewById(R.id.EqualizerView);
-        mStateText = (TextView)findViewById(R.id.StateText);
-        mPercentBar = (ProgressBar)findViewById(R.id.PercentBar);
 
         mUiState = new UIState(getApplication());
 
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
         mUiState.loadState(pref);
-        mEqualizer.setUiState(mUiState);
+
+        changeFragment(new MainFragment(), false);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Start receiving progress events.
+        NoiseService.addPercentListener(this);
+        mUiState.addLockListener(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
-        // Dismiss the active dialog, if any.
-        changeDialog(null);
 
         // If the equalizer is silent, stop the service.
         // This makes it harder to leave running accidentally.
@@ -72,25 +74,16 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
             mUiState.stopSending();
         }
 
-        // Stop receiving progress events.
-        NoiseService.setPercentListener(null);
-        mUiState.clearLockListeners();
-
         SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
         pref.clear();
         mUiState.saveState(pref);
         pref.commit();
+
+        // Stop receiving progress events.
+        NoiseService.removePercentListener(this);
+        mUiState.removeLockListener(this);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        // Start receiving progress events.
-        NoiseService.setPercentListener(this);
-        mUiState.addLockListener(this);
-        mUiState.addLockListener(mEqualizer);
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -99,16 +92,18 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         mi = menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop));
         MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
 
-        mi = menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock));
-        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
+        if (mFragmentConfig.isMain) {
+            mi = menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock));
+            MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
 
-        mi = menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave));
-        mi.setIcon(android.R.drawable.ic_menu_manage);
-        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
+            mi = menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave));
+            mi.setIcon(android.R.drawable.ic_menu_manage);
+            MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
 
-        mi = menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu));
-        mi.setIcon(android.R.drawable.ic_menu_info_details);
-        MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
+            mi = menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu));
+            mi.setIcon(android.R.drawable.ic_menu_info_details);
+            MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
+        }
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -117,7 +112,10 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(MENU_PLAY_STOP)
             .setIcon(mServiceActive ? R.drawable.av_stop : R.drawable.av_play);
-        menu.findItem(MENU_LOCK).setIcon(getLockIcon());
+        MenuItem mi = menu.findItem(MENU_LOCK);
+        if (mi != null) {
+            mi.setIcon(getLockIcon());
+        }
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -140,6 +138,13 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
     }
 
     @Override
+    public boolean onSupportNavigateUp() {
+        // Rewind the back stack.
+        getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case MENU_PLAY_STOP:
@@ -155,10 +160,10 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
             supportInvalidateOptionsMenu();
             return true;
         case MENU_AMPWAVE:
-            changeDialog(new WaveDialog(this, mUiState));
+            changeFragment(new WaveFragment(), true);
             return true;
         case MENU_ABOUT:
-            changeDialog(new AboutDialog(this));
+            changeFragment(new AboutFragment(), true);
             return true;
         }
         return false;
@@ -166,34 +171,49 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
 
     @Override
     public void onNoiseServicePercentChange(int percent) {
-        int vis;
-        boolean newServiceActive;
-        if (percent < 0) {
-            newServiceActive = false;
-            vis = View.INVISIBLE;
-        } else if (percent < 100) {
-            newServiceActive = true;
-            mPercentBar.setProgress(percent);
-            vis = View.VISIBLE;
-        } else {
-            newServiceActive = true;
-            vis = View.INVISIBLE;
-        }
-        mPercentBar.setVisibility(vis);
-        mStateText.setVisibility(vis);
+        boolean newServiceActive = (percent >= 0);
         if (mServiceActive != newServiceActive) {
             mServiceActive = newServiceActive;
+
+            // Redraw the "Play/Stop" button.
             supportInvalidateOptionsMenu();
         }
     }
 
-    private void changeDialog(Dialog d) {
-        if (mActiveDialog != null) {
-            mActiveDialog.dismiss();
+    private void changeFragment(Fragment f, boolean allowBack) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragment_container, f);
+        if (allowBack) {
+            transaction.addToBackStack(null);
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
         }
-        mActiveDialog = d;
-        if (d != null) {
-            d.show();
+        transaction.commit();
+    }
+
+    public UIState getUIState() {
+        return mUiState;
+    }
+
+    // Each fragment calls this from onResume to tweak the ActionBar.
+    public void setFragmentConfig(FragmentConfig cfg) {
+        mFragmentConfig = cfg;
+
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setHomeButtonEnabled(!cfg.isMain);
+        actionBar.setDisplayHomeAsUpEnabled(!cfg.isMain);
+        setHomeButtonEnabledCompat(!cfg.isMain);
+        actionBar.setTitle(cfg.title);
+        supportInvalidateOptionsMenu();
+
+    }
+
+    // HACK: This prevents the icon from remaining clickable after
+    //       returning to the main fragment.
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    void setHomeButtonEnabledCompat(boolean enabled) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            getActionBar().setHomeButtonEnabled(enabled);
         }
     }
 }

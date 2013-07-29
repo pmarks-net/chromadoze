@@ -66,8 +66,10 @@ public class UIState {
         mLockListeners.add(l);
     }
 
-    public void clearLockListeners() {
-        mLockListeners.clear();
+    public void removeLockListener(LockListener l) {
+        if (!mLockListeners.remove(l)) {
+            throw new IllegalStateException();
+        }
     }
 
     private void notifyLockListeners(LockListener.LockEvent e) {
