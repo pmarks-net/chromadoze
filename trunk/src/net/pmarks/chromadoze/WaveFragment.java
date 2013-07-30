@@ -17,7 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -35,9 +34,32 @@ public class WaveFragment extends Fragment implements OnSeekBarChangeListener {
     private TextView mPeriodText;
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        mUiState = ((ChromaDoze)activity).getUIState();
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.wave_fragment, container, false);
+
+        mMinVolSeek = (SeekBar) v.findViewById(R.id.MinVolSeek);
+        mMinVolText = (TextView) v.findViewById(R.id.MinVolText);
+        mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
+        mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
+
+        return v;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        mUiState = ((ChromaDoze)getActivity()).getUIState();
+
+        mMinVolText.setText(mUiState.getMinVolText());
+        mMinVolSeek.setProgress(mUiState.getMinVol());
+        mMinVolSeek.setOnSeekBarChangeListener(this);
+
+        mPeriodText.setText(mUiState.getPeriodText());
+        mPeriodSeek.setProgress(mUiState.getPeriod());
+        // When the volume is at 100%, disable the period bar.
+        mPeriodSeek.setEnabled(mUiState.getMinVol() != 100);
+        mPeriodSeek.setOnSeekBarChangeListener(this);
     }
 
     @Override
@@ -46,31 +68,6 @@ public class WaveFragment extends Fragment implements OnSeekBarChangeListener {
         FragmentConfig cfg = new FragmentConfig();
         cfg.title = getString(R.string.amp_wave);
         ((ChromaDoze)getActivity()).setFragmentConfig(cfg);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.wave_fragment, container, false);
-
-        mMinVolSeek = (SeekBar) v.findViewById(R.id.MinVolSeek);
-        mMinVolSeek.setOnSeekBarChangeListener(this);
-        mMinVolSeek.setProgress(mUiState.getMinVol());
-
-        mMinVolText = (TextView) v.findViewById(R.id.MinVolText);
-        mMinVolText.setText(mUiState.getMinVolText());
-
-        mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
-        mPeriodSeek.setOnSeekBarChangeListener(this);
-        mPeriodSeek.setProgress(mUiState.getPeriod());
-
-        mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
-        mPeriodText.setText(mUiState.getPeriodText());
-
-        // When the volume is at 100%, disable the period bar.
-        mPeriodSeek.setEnabled(mUiState.getMinVol() != 100);
-
-        return v;
     }
 
     @Override
