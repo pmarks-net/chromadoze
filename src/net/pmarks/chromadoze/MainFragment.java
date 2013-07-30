@@ -17,7 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -33,12 +32,6 @@ public class MainFragment extends Fragment implements NoiseServicePercentListene
     private UIState mUiState;
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        mUiState = ((ChromaDoze)activity).getUIState();
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.main_fragment, container, false);
@@ -46,10 +39,14 @@ public class MainFragment extends Fragment implements NoiseServicePercentListene
         mEqualizer = (EqualizerView)v.findViewById(R.id.EqualizerView);
         mStateText = (TextView)v.findViewById(R.id.StateText);
         mPercentBar = (ProgressBar)v.findViewById(R.id.PercentBar);
-
-        mEqualizer.setUiState(mUiState);
-
         return v;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        mUiState = ((ChromaDoze)getActivity()).getUIState();
+        mEqualizer.setUiState(mUiState);
     }
 
     @Override

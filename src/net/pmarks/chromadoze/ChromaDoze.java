@@ -53,13 +53,12 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
         mUiState.loadState(pref);
 
-        /* XXX
-         * Track down these two bugs before releasing anything:
-         * - About > Rotate > Back > Crash!
-         * - Amp Wave > Rotate > Crash!
-         */
-
-        changeFragment(new MainFragment(), false);
+        // When this Activity is first created, set up the initial fragment.
+        // After a save/restore, the framework will drop in the last-used
+        // fragment automatically.
+        if (savedInstanceState == null) {
+            changeFragment(new MainFragment(), false);
+        }
     }
 
     @Override
@@ -197,6 +196,7 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         transaction.commit();
     }
 
+    // Fragments can read this >= onActivityCreated().
     public UIState getUIState() {
         return mUiState;
     }
@@ -211,13 +211,13 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         setHomeButtonEnabledCompat(!cfg.isMain);
         actionBar.setTitle(cfg.title);
         supportInvalidateOptionsMenu();
-
     }
 
-    // HACK: This prevents the icon from remaining clickable after
-    //       returning to the main fragment.
+    // HACK: Prevent the icon from remaining clickable after returning to
+    //       the main fragment.  Is there a bug in the support library?
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     void setHomeButtonEnabledCompat(boolean enabled) {
+        getSupportActionBar().setHomeButtonEnabled(enabled);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
             getActionBar().setHomeButtonEnabled(enabled);
         }
