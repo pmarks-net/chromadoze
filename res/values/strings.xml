@@ -9,6 +9,5 @@
     <string name="generating">Generating IDCT blocks:&#160;</string>
     <string name="play_stop">Play/Stop</string>
     <string name="lock_unlock">Lock/Unlock Input</string>
-    <string name="saved_sounds">Saved Sounds</string>
 </resources>
 
