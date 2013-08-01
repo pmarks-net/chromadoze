@@ -56,10 +56,7 @@ public class MainFragment extends Fragment implements NoiseServicePercentListene
         NoiseService.addPercentListener(this);
         mUiState.addLockListener(mEqualizer);
 
-        FragmentConfig cfg = new FragmentConfig();
-        cfg.isMain = true;
-        cfg.title = getString(R.string.app_name);
-        ((ChromaDoze)getActivity()).setFragmentConfig(cfg);
+        ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_CHROMA_DOZE);
     }
 
     @Override

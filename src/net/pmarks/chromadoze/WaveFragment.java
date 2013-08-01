@@ -65,9 +65,7 @@ public class WaveFragment extends Fragment implements OnSeekBarChangeListener {
     @Override
     public void onResume() {
         super.onResume();
-        FragmentConfig cfg = new FragmentConfig();
-        cfg.title = getString(R.string.amp_wave);
-        ((ChromaDoze)getActivity()).setFragmentConfig(cfg);
+        ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_AMP_WAVE);
     }
 
     @Override
