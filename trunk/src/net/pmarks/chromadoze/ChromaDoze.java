@@ -240,6 +240,9 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         case FragmentIndex.ID_AMP_WAVE:
             changeFragment(new WaveFragment(), true);
             return true;
+        case FragmentIndex.ID_SAVED_SOUNDS:
+            changeFragment(new SavedSoundsFragment(), true);
+            return true;
         case FragmentIndex.ID_ABOUT:
             changeFragment(new AboutFragment(), true);
             return true;

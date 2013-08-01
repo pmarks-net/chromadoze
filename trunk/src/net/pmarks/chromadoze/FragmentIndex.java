@@ -22,13 +22,15 @@ import android.content.Context;
 public class FragmentIndex {
     static final int ID_CHROMA_DOZE = 0;
     static final int ID_AMP_WAVE = 1;
-    static final int ID_ABOUT = 2;
-    static final int ID_COUNT = 3;
+    static final int ID_SAVED_SOUNDS = 2;
+    static final int ID_ABOUT = 3;
+    static final int ID_COUNT = 4;
 
     static String[] getStrings(Context context) {
         String[] out = new String[ID_COUNT];
         out[ID_CHROMA_DOZE] = context.getString(R.string.app_name);
         out[ID_AMP_WAVE] = context.getString(R.string.amp_wave);
+        out[ID_SAVED_SOUNDS] = context.getString(R.string.saved_sounds);
         out[ID_ABOUT] = context.getString(R.string.about_menu);
         return out;
     }
