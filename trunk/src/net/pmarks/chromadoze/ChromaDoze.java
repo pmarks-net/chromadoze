@@ -28,18 +28,18 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBar.OnNavigationListener;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
 
-public class ChromaDoze extends ActionBarActivity implements NoiseServicePercentListener, LockListener {
+public class ChromaDoze extends ActionBarActivity implements NoiseServicePercentListener, LockListener, OnNavigationListener {
     private static final int MENU_PLAY_STOP = 1;
     private static final int MENU_LOCK = 2;
-    private static final int MENU_AMPWAVE = 3;
-    private static final int MENU_ABOUT = 4;
 
     private UIState mUiState;
-    private FragmentConfig mFragmentConfig = new FragmentConfig();
+    private int mFragmentId = FragmentIndex.ID_CHROMA_DOZE;
 
     private boolean mServiceActive;
 
@@ -59,6 +59,17 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         if (savedInstanceState == null) {
             changeFragment(new MainFragment(), false);
         }
+
+        final ActionBar actionBar = getSupportActionBar();
+        actionBar.setDisplayShowTitleEnabled(false);
+        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                actionBar.getThemedContext(),
+                R.layout.title_text,
+                FragmentIndex.getStrings(this));
+        adapter.setDropDownViewResource(android.R.layout.simple_list_item_1);
+        actionBar.setListNavigationCallbacks(adapter, this);
     }
 
     @Override
@@ -97,17 +108,9 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         mi = menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop));
         MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
 
-        if (mFragmentConfig.isMain) {
+        if (mFragmentId == FragmentIndex.ID_CHROMA_DOZE) {
             mi = menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock));
             MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
-
-            mi = menu.add(0, MENU_AMPWAVE, 0, getString(R.string.amp_wave));
-            mi.setIcon(android.R.drawable.ic_menu_manage);
-            MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
-
-            mi = menu.add(0, MENU_ABOUT, 0, getString(R.string.about_menu));
-            mi.setIcon(android.R.drawable.ic_menu_info_details);
-            MenuItemCompat.setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_NEVER);
         }
 
         return super.onCreateOptionsMenu(menu);
@@ -164,12 +167,6 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
             mUiState.toggleLocked();
             supportInvalidateOptionsMenu();
             return true;
-        case MENU_AMPWAVE:
-            changeFragment(new WaveFragment(), true);
-            return true;
-        case MENU_ABOUT:
-            changeFragment(new AboutFragment(), true);
-            return true;
         }
         return false;
     }
@@ -187,11 +184,17 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
 
     private void changeFragment(Fragment f, boolean allowBack) {
         FragmentManager fragmentManager = getSupportFragmentManager();
+
+        // Prune the stack, so "back" always leads home.
+        if (fragmentManager.getBackStackEntryCount() > 0) {
+            onSupportNavigateUp();
+        }
+
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.fragment_container, f);
         if (allowBack) {
             transaction.addToBackStack(null);
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         }
         transaction.commit();
     }
@@ -202,15 +205,17 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
     }
 
     // Each fragment calls this from onResume to tweak the ActionBar.
-    public void setFragmentConfig(FragmentConfig cfg) {
-        mFragmentConfig = cfg;
+    public void setFragmentId(int id) {
+        mFragmentId = id;
 
+        final boolean enableUp = id != FragmentIndex.ID_CHROMA_DOZE;
         ActionBar actionBar = getSupportActionBar();
-        actionBar.setHomeButtonEnabled(!cfg.isMain);
-        actionBar.setDisplayHomeAsUpEnabled(!cfg.isMain);
-        setHomeButtonEnabledCompat(!cfg.isMain);
-        actionBar.setTitle(cfg.title);
+        actionBar.setHomeButtonEnabled(enableUp);
+        actionBar.setDisplayHomeAsUpEnabled(enableUp);
+        setHomeButtonEnabledCompat(enableUp);
         supportInvalidateOptionsMenu();
+
+        getSupportActionBar().setSelectedNavigationItem(id);
     }
 
     // HACK: Prevent the icon from remaining clickable after returning to
@@ -221,5 +226,24 @@ public class ChromaDoze extends ActionBarActivity implements NoiseServicePercent
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
             getActionBar().setHomeButtonEnabled(enabled);
         }
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(int itemPosition, long itemId) {
+        if (itemPosition == mFragmentId) {
+            return false;
+        }
+        switch (itemPosition) {
+        case FragmentIndex.ID_CHROMA_DOZE:
+            onSupportNavigateUp();
+            return true;
+        case FragmentIndex.ID_AMP_WAVE:
+            changeFragment(new WaveFragment(), true);
+            return true;
+        case FragmentIndex.ID_ABOUT:
+            changeFragment(new AboutFragment(), true);
+            return true;
+        }
+        return false;
     }
 }

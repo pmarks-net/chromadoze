@@ -17,7 +17,19 @@
 
 package net.pmarks.chromadoze;
 
-public class FragmentConfig {
-    boolean isMain = false;
-    String title = "?";
+import android.content.Context;
+
+public class FragmentIndex {
+    static final int ID_CHROMA_DOZE = 0;
+    static final int ID_AMP_WAVE = 1;
+    static final int ID_ABOUT = 2;
+    static final int ID_COUNT = 3;
+
+    static String[] getStrings(Context context) {
+        String[] out = new String[ID_COUNT];
+        out[ID_CHROMA_DOZE] = context.getString(R.string.app_name);
+        out[ID_AMP_WAVE] = context.getString(R.string.amp_wave);
+        out[ID_ABOUT] = context.getString(R.string.about_menu);
+        return out;
+    }
 }

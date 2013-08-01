@@ -52,9 +52,7 @@ public class AboutFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        FragmentConfig cfg = new FragmentConfig();
-        cfg.title = getString(R.string.about_menu);
-        ((ChromaDoze)getActivity()).setFragmentConfig(cfg);
+        ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_ABOUT);
     }
 
 }
