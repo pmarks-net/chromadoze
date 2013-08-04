@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<net.pmarks.chromadoze.CheckableLinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+    <net.pmarks.chromadoze.CheckableLinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <ImageView
+            android:id="@+id/drag_handle"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_weight="0"
+            android:background="@drawable/btn_default_holo_dark"
+            android:src="@drawable/grip_dots" />
+
+        <CheckedTextView
+            android:id="@+id/text"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:checkMark="?android:attr/listChoiceIndicatorSingle"
+            android:gravity="center_vertical"
+            android:paddingLeft="8dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+    </net.pmarks.chromadoze.CheckableLinearLayout>
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/listDivider" />
+
+</net.pmarks.chromadoze.CheckableLinearLayout>
