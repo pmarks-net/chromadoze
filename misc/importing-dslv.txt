@@ -1,0 +1,12 @@
+Here's how I merged DragSortListView into the Chroma Doze tree:
+
+- Download from here:
+  https://github.com/bauerca/drag-sort-listview
+
+- Copy these paths:
+  + library/res/values/dslv_attrs.xml
+  + library/res/values/ids.xml
+  + library/src/...
+
+- Add this line to to DragSortListView.java:
+  import net.pmarks.chromadoze.R;
