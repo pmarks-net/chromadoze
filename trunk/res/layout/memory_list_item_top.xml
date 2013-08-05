@@ -13,14 +13,6 @@
         android:background="@drawable/btn_default_holo_dark"
         android:src="@drawable/ic_menu_save_big" />
 
-    <CheckedTextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:layout_weight="1"
-        android:checkMark="?android:attr/listChoiceIndicatorSingle"
-        android:gravity="center_vertical"
-        android:paddingLeft="8dp"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+    <include layout="@layout/memory_list_item_common" />
 
 </net.pmarks.chromadoze.CheckableLinearLayout>

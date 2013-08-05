@@ -29,11 +29,14 @@ import android.widget.TextView;
 public class MemoryArrayAdapter extends ArrayAdapter<String> {
 
     private final Context mContext;
+    private final UIState mUiState;
 
     public MemoryArrayAdapter(Context context, int resource,
-            int textViewResourceId, List<String> objects) {
+            int textViewResourceId, List<String> objects,
+            UIState uiState) {
         super(context, resource, textViewResourceId, objects);
         mContext = context;
+        mUiState = uiState;
     }
 
     @Override
@@ -48,10 +51,17 @@ public class MemoryArrayAdapter extends ArrayAdapter<String> {
             view = convertView;
         }
 
-        TextView text = (TextView) view.findViewById(R.id.text);
-        text.setText(getItem(position));
+        initListItem(view, getItem(position));
 
         return view;
 
+    }
+
+    public void initListItem(View view, String text) {
+        TextView tv = (TextView) view.findViewById(R.id.text);
+        tv.setText(text);
+
+        EqualizerViewLite eq = (EqualizerViewLite) view.findViewById(R.id.EqualizerView);
+        eq.setUiState(mUiState);
     }
 }
