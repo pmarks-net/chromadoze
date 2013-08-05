@@ -16,16 +16,9 @@
             android:layout_weight="0"
             android:background="@drawable/btn_default_holo_dark"
             android:src="@drawable/grip_dots" />
+        
+        <include layout="@layout/memory_list_item_common" />
 
-        <CheckedTextView
-            android:id="@+id/text"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:layout_weight="1"
-            android:checkMark="?android:attr/listChoiceIndicatorSingle"
-            android:gravity="center_vertical"
-            android:paddingLeft="8dp"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
     </net.pmarks.chromadoze.CheckableLinearLayout>
 
     <View

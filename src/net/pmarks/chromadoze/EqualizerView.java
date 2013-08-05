@@ -204,6 +204,7 @@ public class EqualizerView extends android.view.View implements LockListener {
         mUiState.setBar(stopBand, yToBar(stopY));
     }
 
+    @Override
     public void onLockStateChange(LockEvent e) {
         // Only spend time redrawing if this is an on/off event.
         if (e == LockEvent.TOGGLE) {

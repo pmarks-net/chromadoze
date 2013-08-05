@@ -27,7 +27,6 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.mobeta.android.dslv.DragSortListView;
@@ -37,10 +36,12 @@ import com.mobeta.android.dslv.DragSortListView.RemoveListener;
 public class MemoryFragment extends ListFragment implements
         OnItemClickListener, DropListener, RemoveListener {
 
+    private View mHeaderView;
     private DragSortListView mDslv;
     private UIState mUiState;
+    private EqualizerView mEqualizer;
 
-    private ArrayAdapter<String> mAdapter;
+    private MemoryArrayAdapter mAdapter;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -58,7 +59,8 @@ public class MemoryFragment extends ListFragment implements
                         .show();
             }
         });
-        mDslv.addHeaderView(v, null, true);
+        mHeaderView = v;
+        mDslv.addHeaderView(mHeaderView, null, true);
 
         mDslv.addHeaderView(
                 inflater.inflate(R.layout.memory_list_divider, null), null,
@@ -77,14 +79,20 @@ public class MemoryFragment extends ListFragment implements
         al.add("2");
         al.add("3");
         al.add("4");
+        al.add("5");
+        al.add("6");
 
         mAdapter = new MemoryArrayAdapter(getActivity(),
-                R.layout.memory_list_item, R.id.text, al);
+                R.layout.memory_list_item, R.id.text, al,
+                mUiState
+                );
         setListAdapter(mAdapter);
 
         mDslv.setOnItemClickListener(this);
         mDslv.setDropListener(this);
         mDslv.setRemoveListener(this);
+
+        mAdapter.initListItem(mHeaderView, "Scratch");
     }
 
     @Override
