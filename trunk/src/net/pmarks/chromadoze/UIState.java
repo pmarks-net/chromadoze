@@ -41,28 +41,40 @@ public class UIState {
     }
 
     public void saveState(SharedPreferences.Editor pref) {
-        // XXX Save doesn't work yet.
-        /*
-        for (int i = 0; i < BAND_COUNT; i++) {
-            pref.putFloat("barHeight" + i, mBars[i]);
-        }
-        pref.putInt("minVol", mMinVol);
-        pref.putInt("period", mPeriod);
-        */
         pref.putBoolean("locked", mLocked);
+        pref.putString("phononS", mScratchPhonon.toJSON());
+        for (int i = 0 ; i < mSavedPhonons.size(); i++) {
+            pref.putString("phonon" + i, mSavedPhonons.get(i).toJSON());
+            mSavedPhonons.get(i);
+        }
+        pref.putInt("activePhonon", mActivePos.getPos());
     }
 
     public void loadState(SharedPreferences pref) {
-        // XXX Load doesn't work yet.
         mLocked = pref.getBoolean("locked", false);
 
-        mActivePos.setPos(-1);
+        // Load the scratch phonon.
         mScratchPhonon = new PhononMutable();
-        if (!mScratchPhonon.loadFromLegacyPrefs(pref)) {
+        if (mScratchPhonon.loadFromJSON(pref.getString("phononS", null))) {
+        } else if (mScratchPhonon.loadFromLegacyPrefs(pref)) {
+        } else {
             mScratchPhonon.resetToDefault();
         }
 
+        // Load the saved phonons.
         mSavedPhonons = new ArrayList<Phonon>();
+        for (int i = 0; i < TrackedPosition.NOWHERE; i++) {
+            PhononMutable phm = new PhononMutable();
+            if (!phm.loadFromJSON(pref.getString("phonon" + i, null))) {
+                break;
+            }
+            mSavedPhonons.add(phm);
+        }
+
+        // Load the currently-selected phonon.
+        final int active = pref.getInt("activePhonon", -1);
+        mActivePos.setPos(-1 <= active && active < mSavedPhonons.size() ?
+                active : -1);
     }
 
     public void addLockListener(LockListener l) {
