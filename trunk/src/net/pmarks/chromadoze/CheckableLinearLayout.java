@@ -56,4 +56,12 @@ public class CheckableLinearLayout extends LinearLayout implements Checkable {
     public void toggle() {
         mChild.toggle();
     }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        for (int i = 0; i < getChildCount(); i++) {
+            getChildAt(i).setEnabled(enabled);
+        }
+    }
 }

@@ -11,7 +11,7 @@
         android:layout_height="fill_parent"
         android:layout_weight="0"
         android:background="@drawable/btn_default_holo_dark"
-        android:src="@drawable/ic_menu_save_big" />
+        android:src="@drawable/ic_menu_save" />
 
     <include layout="@layout/memory_list_item_common" />
 

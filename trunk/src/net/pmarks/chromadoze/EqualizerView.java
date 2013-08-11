@@ -71,9 +71,10 @@ public class EqualizerView extends android.view.View implements LockListener {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        final Phonon ph = mUiState != null ? mUiState.getPhonon() : null;
         final boolean isLocked = mUiState != null ? mUiState.getLocked() : false;
         for (int i = 0; i < BAND_COUNT; i++) {
-            float bar = mUiState != null ? mUiState.getBar(i) : .5f;
+            float bar = ph != null ? ph.getBar(i) : .5f;
             float startX = mBarWidth * i;
             float stopX = startX + mBarWidth;
             float startY = barToY(bar);
@@ -122,12 +123,13 @@ public class EqualizerView extends android.view.View implements LockListener {
             return false;
         }
 
+        PhononMutable phm = mUiState.getPhononMutable();
         for (int i = 0; i < event.getHistorySize(); i++) {
-            touchLine(event.getHistoricalX(i), event.getHistoricalY(i));
+            touchLine(phm, event.getHistoricalX(i), event.getHistoricalY(i));
         }
-        touchLine(event.getX(), event.getY());
+        touchLine(phm, event.getX(), event.getY());
 
-        if (mUiState.commitBars()) {
+        if (phm.sendIfDirty(mUiState.getContext())) {
             invalidate();
         }
         return true;
@@ -180,7 +182,7 @@ public class EqualizerView extends android.view.View implements LockListener {
     //   Left:
     //     3->0: 3, 2, 1 [endpoint in 0]
 
-    private void touchLine(float stopX, float stopY) {
+    private void touchLine(PhononMutable phm, float stopX, float stopY) {
         float startX = mLastX;
         float startY = mLastY;
         mLastX = stopX;
@@ -198,10 +200,10 @@ public class EqualizerView extends android.view.View implements LockListener {
             // Get the Y value at exitX.
             float slope = (stopY - startY) / (stopX - startX);
             float exitY = startY + slope * (exitX - startX);
-            mUiState.setBar(i, yToBar(exitY));
+            phm.setBar(i, yToBar(exitY));
         }
         // Set the Y endpoint.
-        mUiState.setBar(stopBand, yToBar(stopY));
+        phm.setBar(stopBand, yToBar(stopY));
     }
 
     @Override

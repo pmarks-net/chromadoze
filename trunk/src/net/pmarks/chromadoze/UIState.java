@@ -18,7 +18,6 @@
 package net.pmarks.chromadoze;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
 import junit.framework.Assert;
 import android.content.Context;
@@ -26,40 +25,44 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 
 public class UIState {
-    public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
-    private boolean mBarsChanged = false;
     private final Context mContext;
 
-    // The current value of each bar, [0.0, 1.0]
-    private final float mBars[] = new float[BAND_COUNT];
-
-    private int mMinVol = 100;
-    private int mPeriod = 18;  // Maps to 1 second
     private boolean mLocked = false;
     private boolean mLockBusy = false;
     private final ArrayList<LockListener> mLockListeners = new ArrayList<LockListener>();
+
+    public final TrackedPosition mActivePos = new TrackedPosition();
+    public PhononMutable mScratchPhonon;
+    public ArrayList<Phonon> mSavedPhonons;
 
     public UIState(Context context) {
         mContext = context;
     }
 
     public void saveState(SharedPreferences.Editor pref) {
+        // XXX Save doesn't work yet.
+        /*
         for (int i = 0; i < BAND_COUNT; i++) {
             pref.putFloat("barHeight" + i, mBars[i]);
         }
         pref.putInt("minVol", mMinVol);
         pref.putInt("period", mPeriod);
+        */
         pref.putBoolean("locked", mLocked);
     }
 
     public void loadState(SharedPreferences pref) {
-        for (int i = 0; i < BAND_COUNT; i++) {
-            mBars[i] = pref.getFloat("barHeight" + i, .5f);
-        }
-        mMinVol = pref.getInt("minVol", 100);
-        mPeriod = pref.getInt("period", 18);
+        // XXX Load doesn't work yet.
         mLocked = pref.getBoolean("locked", false);
+
+        mActivePos.setPos(-1);
+        mScratchPhonon = new PhononMutable();
+        if (!mScratchPhonon.loadFromLegacyPrefs(pref)) {
+            mScratchPhonon.resetToDefault();
+        }
+
+        mSavedPhonons = new ArrayList<Phonon>();
     }
 
     public void addLockListener(LockListener l) {
@@ -79,7 +82,7 @@ public class UIState {
     }
 
     public void startSending() {
-        sendToService();
+        getPhonon().sendToService(mContext);
     }
 
     public void stopSending() {
@@ -87,75 +90,6 @@ public class UIState {
         mContext.stopService(intent);
     }
 
-    // band: The index number of the bar.
-    // value: Between 0 and 1.
-    public void setBar(int band, float value) {
-        if (mBars[band] != value) {
-            mBars[band] = value;
-            mBarsChanged = true;
-        }
-    }
-
-    public float getBar(int band) {
-        return mBars[band];
-    }
-
-    // Returns true if any change occurred.
-    public boolean commitBars() {
-        if (mBarsChanged) {
-            sendToService();
-            mBarsChanged = false;
-            return true;
-        }
-        return false;
-    }
-
-    // Return true if all equalizer bars are set to zero.
-    public boolean isSilent() {
-        for (int i = 0; i < BAND_COUNT; i++) {
-            if (mBars[i] > 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    // Range: [0, 100]
-    public void setMinVol(int minVol) {
-        if (minVol != mMinVol) {
-            mMinVol = minVol;
-            sendToService();
-        }
-    }
-
-    public int getMinVol() {
-        return mMinVol;
-    }
-
-    public String getMinVolText() {
-        return mMinVol + "%";
-    }
-
-    // Range: [0, 100]
-    public void setPeriod(int period) {
-        if (period != mPeriod) {
-            mPeriod = period;
-            sendToService();
-        }
-    }
-
-    public int getPeriod() {
-        return mPeriod;
-    }
-
-    public String getPeriodText() {
-        float s = getPeriodSeconds();
-        if (s >= 1f) {
-            return String.format(Locale.getDefault(), "%.2g sec", s);
-        } else {
-            return String.format(Locale.getDefault(), "%d ms", Math.round(s * 1000));
-        }
-    }
 
     public void toggleLocked() {
         mLocked = !mLocked;
@@ -181,32 +115,31 @@ public class UIState {
         return mLockBusy;
     }
 
-    private float getPeriodSeconds() {
-        // This is a somewhat human-friendly mapping from
-        // scroll position to seconds.
-        if (mPeriod < 9) {
-            // 10ms, 20ms, ..., 90ms
-            return (mPeriod + 1) * .010f;
-        } else if (mPeriod < 18) {
-            // 100ms, 200ms, ..., 900ms
-            return (mPeriod - 9 + 1) * .100f;
-        } else if (mPeriod < 36) {
-            // 1.0s, 1.5s, ..., 9.5s
-            return (mPeriod - 18 + 2) * .5f;
-        } else if (mPeriod < 45) {
-            // 10, 11, ..., 19
-            return (mPeriod - 36 + 10) * 1f;
-        } else {
-            // 20, 25, 30, ... 60
-            return (mPeriod - 45 + 4) * 5f;
+    public Phonon getPhonon() {
+        if (mActivePos.getPos() == -1) {
+            return mScratchPhonon;
         }
+        return mSavedPhonons.get(mActivePos.getPos());
     }
 
-    private void sendToService() {
-        Intent intent = new Intent(mContext, NoiseService.class);
-        intent.putExtra("spectrum", new SpectrumData(
-                mBars, mMinVol / 100f, getPeriodSeconds()));
-        mContext.startService(intent);
+    public PhononMutable getPhononMutable() {
+        if (mActivePos.getPos() != -1) {
+            mScratchPhonon = mSavedPhonons.get(mActivePos.getPos()).makeMutableCopy();
+            mActivePos.setPos(-1);
+        }
+        return mScratchPhonon;
     }
 
+    public Context getContext() {
+        return mContext;
+    }
+
+    // -1 or 0..n
+    public void setActivePhonon(int index) {
+        if (!(-1 <= index && index < mSavedPhonons.size())) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        mActivePos.setPos(index);
+        getPhonon().sendToService(mContext);
+    }
 }
