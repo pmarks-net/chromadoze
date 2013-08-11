@@ -25,7 +25,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class MainFragment extends Fragment implements NoiseServicePercentListener {
+public class MainFragment extends Fragment implements NoiseService.PercentListener {
     private EqualizerView mEqualizer;
     private TextView mStateText;
     private ProgressBar mPercentBar;

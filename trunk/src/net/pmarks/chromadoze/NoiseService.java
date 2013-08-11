@@ -37,8 +37,8 @@ public class NoiseService extends Service {
 
     // These must be accessed only from the main thread.
     private static int sLastPercent = -1;
-    private static final ArrayList<NoiseServicePercentListener> sPercentListeners =
-            new ArrayList<NoiseServicePercentListener>();
+    private static final ArrayList<PercentListener> sPercentListeners =
+            new ArrayList<PercentListener>();
 
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
@@ -127,7 +127,7 @@ public class NoiseService extends Service {
     // If connected, notify the main activity of our progress.
     // This must run in the main thread.
     private static void updatePercent(int percent) {
-        for (NoiseServicePercentListener listener : sPercentListeners) {
+        for (PercentListener listener : sPercentListeners) {
             listener.onNoiseServicePercentChange(percent);
         }
         sLastPercent = percent;
@@ -135,14 +135,18 @@ public class NoiseService extends Service {
 
     // Connect the main activity so it receives progress updates.
     // This must run in the main thread.
-    public static void addPercentListener(NoiseServicePercentListener listener) {
+    public static void addPercentListener(PercentListener listener) {
         sPercentListeners.add(listener);
         listener.onNoiseServicePercentChange(sLastPercent);
     }
 
-    public static void removePercentListener(NoiseServicePercentListener listener) {
+    public static void removePercentListener(PercentListener listener) {
         if (!sPercentListeners.remove(listener)) {
             throw new IllegalStateException();
         }
+    }
+
+    public interface PercentListener {
+        void onNoiseServicePercentChange(int percent);
     }
 }
