@@ -17,8 +17,9 @@
 
 package net.pmarks.chromadoze;
 
-import java.util.ArrayList;
-
+import net.pmarks.chromadoze.MemoryArrayAdapter.Saved;
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
@@ -27,7 +28,6 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.Toast;
 
 import com.mobeta.android.dslv.DragSortListView;
 import com.mobeta.android.dslv.DragSortListView.DropListener;
@@ -39,9 +39,11 @@ public class MemoryFragment extends ListFragment implements
     private View mHeaderView;
     private DragSortListView mDslv;
     private UIState mUiState;
-    private EqualizerView mEqualizer;
 
     private MemoryArrayAdapter mAdapter;
+
+    // This is basically the cached result of findScratchCopy().
+    private final TrackedPosition mScratchPos = new TrackedPosition();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -54,9 +56,13 @@ public class MemoryFragment extends ListFragment implements
         button.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View arg0) {
-                final String message = "Clicked Save";
-                Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT)
-                        .show();
+                // Clicked the "Save" button.
+                final Phonon ph = mUiState.mScratchPhonon.makeMutableCopy();
+                mAdapter.insert(ph, 0);
+                // Gray out the header row.
+                setScratchPosAndDraw(findScratchCopy());
+                // Fake-click the header row.
+                onItemClick(null, null, 0, 0);
             }
         });
         mHeaderView = v;
@@ -74,25 +80,12 @@ public class MemoryFragment extends ListFragment implements
         super.onActivityCreated(savedInstanceState);
         mUiState = ((ChromaDoze) getActivity()).getUIState();
 
-        ArrayList<String> al = new ArrayList<String>();
-        al.add("1");
-        al.add("2");
-        al.add("3");
-        al.add("4");
-        al.add("5");
-        al.add("6");
-
-        mAdapter = new MemoryArrayAdapter(getActivity(),
-                R.layout.memory_list_item, R.id.text, al,
-                mUiState
-                );
+        mAdapter = new MemoryArrayAdapter(getActivity(), mUiState.mSavedPhonons);
         setListAdapter(mAdapter);
 
         mDslv.setOnItemClickListener(this);
         mDslv.setDropListener(this);
         mDslv.setRemoveListener(this);
-
-        mAdapter.initListItem(mHeaderView, "Scratch");
     }
 
     @Override
@@ -100,32 +93,114 @@ public class MemoryFragment extends ListFragment implements
         super.onResume();
         ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_MEMORY);
 
-        mDslv.setItemChecked(0, true);
+        setScratchPosAndDraw(findScratchCopy());
+        syncActiveItem(false);
     }
 
     @Override
     public void drop(int from, int to) {
         if (from != to) {
-            final int numHeaders = mDslv.getHeaderViewsCount();
-            String item = mAdapter.getItem(from);
+            Phonon item = mAdapter.getItem(from);
             mAdapter.remove(item);
             mAdapter.insert(item, to);
-            mDslv.moveCheckState(from + numHeaders, to + numHeaders);
+            moveTrackedPositions(from, to, null);
         }
     }
 
     @Override
     public void remove(int which) {
-        final int numHeaders = mDslv.getHeaderViewsCount();
-        String item = mAdapter.getItem(which);
+        Phonon item = mAdapter.getItem(which);
         mAdapter.remove(item);
-        mDslv.removeCheckState(which + numHeaders);
+        moveTrackedPositions(which, TrackedPosition.NOWHERE, item);
+    }
+
+    private void moveTrackedPositions(int from, int to, Phonon deleted) {
+        if ((to == TrackedPosition.NOWHERE) != (deleted != null)) {
+            throw new IllegalArgumentException();
+        }
+        try {
+            if (mUiState.mActivePos.move(from, to)) {
+                // Move the radio button.
+                syncActiveItem(false);
+            }
+        } catch (TrackedPosition.Deleted e) {
+            // The active item was deleted!
+            // Move it to scratch, so it can keep playing.
+            mUiState.mScratchPhonon = deleted.makeMutableCopy();
+            setScratchPosAndDraw(-1);
+            mUiState.mActivePos.setPos(-1);
+            syncActiveItem(true);
+            return;
+        }
+
+        try {
+            mScratchPos.move(from, to);
+        } catch (TrackedPosition.Deleted e) {
+            // The (inactive) scratch copy was deleted!
+            // Reactivate the real scratch.
+            setScratchPosAndDraw(-1);
+        }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position,
             long id) {
-        String message = String.format("Clicked item %d", position);
-        Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+        mUiState.setActivePhonon(position == 0 ?
+                -1 : position - mDslv.getHeaderViewsCount());
+
+        if (position == 0) {
+            // User clicked on the scratch.  Jump to a copy if one exists.
+            syncActiveItem(true);
+        }
+    }
+
+    // Header row should be grayed out whenever the scratch is redundant.
+    private void setScratchPosAndDraw(int pos) {
+        mScratchPos.setPos(pos);
+        final boolean enabled = (pos == -1);
+        mHeaderView.setEnabled(enabled);
+        mAdapter.initListItem(mHeaderView, mUiState.mScratchPhonon,
+                enabled ? Saved.NO : Saved.YES);
+    }
+
+    // If the scratch Phonon is unique, return -1.  Otherwise, return the
+    // copy's index within mArray.
+    private int findScratchCopy() {
+        final PhononMutable scratch = mUiState.mScratchPhonon;
+        for (int i = 0; i < mUiState.mSavedPhonons.size(); i++) {
+            if (mUiState.mSavedPhonons.get(i).fastEquals(scratch)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void syncActiveItem(boolean scrollThere) {
+        // Determine which index to check.
+        int index = mUiState.mActivePos.getPos();
+        if (index == -1) {
+            index = mScratchPos.getPos();
+            mUiState.mActivePos.setPos(index);
+        }
+
+        // Convert the index to a list row.
+        if (index == -1) {
+            index = 0;
+        } else {
+            index += mDslv.getHeaderViewsCount();
+        }
+
+        // Modify the UI.
+        mDslv.setItemChecked(index, true);
+        if (scrollThere) {
+            smoothScrollToPositionCompat(index);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.FROYO)
+    private void smoothScrollToPositionCompat(int index) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
+            mDslv.smoothScrollToPosition(index);
+        }
     }
 }

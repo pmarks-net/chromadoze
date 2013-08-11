@@ -50,15 +50,17 @@ public class WaveFragment extends Fragment implements OnSeekBarChangeListener {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mUiState = ((ChromaDoze)getActivity()).getUIState();
+        final Phonon ph = mUiState.getPhonon();
 
-        mMinVolText.setText(mUiState.getMinVolText());
-        mMinVolSeek.setProgress(mUiState.getMinVol());
+        mMinVolText.setText(ph.getMinVolText());
+        mMinVolSeek.setProgress(ph.getMinVol());
         mMinVolSeek.setOnSeekBarChangeListener(this);
 
-        mPeriodText.setText(mUiState.getPeriodText());
-        mPeriodSeek.setProgress(mUiState.getPeriod());
+        mPeriodText.setText(ph.getPeriodText());
+        mPeriodSeek.setProgress(ph.getPeriod());
         // When the volume is at 100%, disable the period bar.
-        mPeriodSeek.setEnabled(mUiState.getMinVol() != 100);
+        mPeriodSeek.setEnabled(ph.getMinVol() != 100);
+        mPeriodSeek.setMax(PhononMutable.PERIOD_MAX);
         mPeriodSeek.setOnSeekBarChangeListener(this);
     }
 
@@ -74,14 +76,16 @@ public class WaveFragment extends Fragment implements OnSeekBarChangeListener {
         if (!fromUser) {
             return;
         }
+        final PhononMutable phm = mUiState.getPhononMutable();
         if (seekBar == mMinVolSeek) {
-            mUiState.setMinVol(progress);
-            mMinVolText.setText(mUiState.getMinVolText());
+            phm.setMinVol(progress);
+            mMinVolText.setText(phm.getMinVolText());
             mPeriodSeek.setEnabled(progress != 100);
         } else if (seekBar == mPeriodSeek) {
-            mUiState.setPeriod(progress);
-            mPeriodText.setText(mUiState.getPeriodText());
+            phm.setPeriod(progress);
+            mPeriodText.setText(phm.getPeriodText());
         }
+        phm.sendIfDirty(mUiState.getContext());
     }
 
     @Override

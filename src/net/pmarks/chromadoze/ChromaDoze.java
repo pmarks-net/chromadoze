@@ -86,7 +86,7 @@ public class ChromaDoze extends ActionBarActivity implements
 
         // If the equalizer is silent, stop the service.
         // This makes it harder to leave running accidentally.
-        if (mServiceActive && mUiState.isSilent()) {
+        if (mServiceActive && mUiState.getPhonon().isSilent()) {
             mUiState.stopSending();
         }
 

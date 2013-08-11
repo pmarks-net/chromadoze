@@ -20,13 +20,20 @@ package net.pmarks.chromadoze;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+// SpectrumData is a Phonon translated into "machine readable" form.
+//
+// In other words, the values here are suitable for generating noise,
+// and not for storage or rendering UI elements.
+
 public class SpectrumData implements Parcelable {
     public static final Parcelable.Creator<SpectrumData> CREATOR
             = new Parcelable.Creator<SpectrumData>() {
+        @Override
         public SpectrumData createFromParcel(Parcel in) {
             return new SpectrumData(in);
         }
 
+        @Override
         public SpectrumData[] newArray(int size) {
             return new SpectrumData[size];
         }
@@ -52,16 +59,16 @@ public class SpectrumData implements Parcelable {
         return edgeFreqs;
     }
 
-    public SpectrumData(float[] barHeights, float minVol, float period) {
-        if (barHeights.length != BAND_COUNT) {
+    public SpectrumData(float[] donateBars, float minVol, float period) {
+        if (donateBars.length != BAND_COUNT) {
             throw new RuntimeException("Incorrect number of bands");
         }
-        mData = new float[BAND_COUNT];
+        mData = donateBars;
         for (int i = 0; i < BAND_COUNT; i++) {
-            if (barHeights[i] == 0) {
-                mData[i] = 0;
+            if (mData[i] <= 0f) {
+                mData[i] = 0f;
             } else {
-                mData[i] = 0.001f * (float)Math.pow(1000, barHeights[i]);
+                mData[i] = 0.001f * (float)Math.pow(1000, mData[i]);
             }
         }
         mMinVol = minVol;
@@ -75,10 +82,12 @@ public class SpectrumData implements Parcelable {
         mPeriod = in.readFloat();
     }
 
+    @Override
     public int describeContents() {
         return 0;
     }
 
+    @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeFloatArray(mData);
         dest.writeFloat(mMinVol);

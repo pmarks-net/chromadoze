@@ -35,7 +35,7 @@ import android.view.View;
 public class EqualizerViewLite extends View {
     public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
-    private UIState mUiState;
+    private Phonon mPhonon;
 
     private int mWidth;
     private int mHeight;
@@ -47,10 +47,12 @@ public class EqualizerViewLite extends View {
         super(context, attrs);
     }
 
-    public void setUiState(UIState uiState) {
-        mUiState = uiState;
-        mBitmap = null;
-        invalidate();
+    public void setPhonon(Phonon ph) {
+        if (mPhonon != ph) {
+            mPhonon = ph;
+            mBitmap = null;
+            invalidate();
+        }
     }
 
     private Bitmap makeBitmap() {
@@ -60,13 +62,14 @@ public class EqualizerViewLite extends View {
         // Draw a white line
         Paint whitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         whitePaint.setColor(Color.WHITE);
+        whitePaint.setAlpha(isEnabled() ? 250 : 94);
         whitePaint.setStyle(Paint.Style.STROKE);
         whitePaint.setStrokeWidth(dpToPixels(3));
 
         Path path = new Path();
         boolean first = true;
         for (int i = 0; i < BAND_COUNT; i++) {
-            float bar = mUiState != null ? mUiState.getBar(i) : .5f;
+            float bar = mPhonon != null ? mPhonon.getBar(i) : .5f;
             float x = mBarWidth * (i + 0.5f);
             float y = barToY(bar);
 
@@ -114,5 +117,12 @@ public class EqualizerViewLite extends View {
         Resources r = getResources();
         return TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP, dp, r.getDisplayMetrics());
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        mBitmap = null;
+        invalidate();
     }
 }
