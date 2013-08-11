@@ -26,7 +26,7 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
-public class EqualizerView extends android.view.View implements LockListener {
+public class EqualizerView extends android.view.View implements UIState.LockListener {
     public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
     private final Paint mBarColor[] = new Paint[BAND_COUNT];

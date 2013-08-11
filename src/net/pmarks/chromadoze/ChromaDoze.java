@@ -35,7 +35,7 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 
 public class ChromaDoze extends ActionBarActivity implements
-        NoiseServicePercentListener, LockListener, OnNavigationListener {
+        NoiseService.PercentListener, UIState.LockListener, OnNavigationListener {
     private static final int MENU_PLAY_STOP = 1;
     private static final int MENU_LOCK = 2;
 
