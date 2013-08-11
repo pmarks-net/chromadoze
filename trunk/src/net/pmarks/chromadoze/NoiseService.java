@@ -71,7 +71,7 @@ public class NoiseService extends Service {
     }
 
     @Override
-    public void onStart(Intent intent, int startId) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
         SpectrumData spectrum = intent.getParcelableExtra("spectrum");
 
         // Synchronous updates.
@@ -79,6 +79,14 @@ public class NoiseService extends Service {
 
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
+
+        // If the device is under enough memory pressure to kill a foreground
+        // service, it's probably best to wait for the user to restart it.
+        //
+        // Note that switching to START_REDELIVER_INTENT here would probably
+        // cause a leak, because we never call stopSelf(startId).  Search for
+        // "ActiveServices.java" to see how that works.
+        return START_NOT_STICKY;
     }
 
     @Override
