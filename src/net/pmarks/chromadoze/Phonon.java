@@ -21,6 +21,7 @@ import android.content.Context;
 
 // Read-only view of a PhononMutable
 public interface Phonon {
+    public String toJSON();
     public boolean isSilent();
     public float getBar(int band);
     public int getMinVol();

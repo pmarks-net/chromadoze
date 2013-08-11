@@ -20,6 +20,10 @@ package net.pmarks.chromadoze;
 import java.util.Arrays;
 import java.util.Locale;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -56,6 +60,7 @@ public class PhononMutable implements Phonon {
         cleanMe();
     }
 
+    // Load data from <= Chroma Doze 2.2.
     public boolean loadFromLegacyPrefs(SharedPreferences pref) {
         if (pref.getFloat("barHeight0", -1) < 0) {
             return false;
@@ -67,6 +72,48 @@ public class PhononMutable implements Phonon {
         setPeriod(pref.getInt("period", 18));
         cleanMe();
         return true;
+    }
+
+    public boolean loadFromJSON(String jsonString) {
+        if (jsonString == null) {
+            return false;
+        }
+        try {
+            JSONObject j = new JSONObject(jsonString);
+            setMinVol(j.getInt("minvol"));
+            setPeriod(j.getInt("period"));
+            JSONArray jBars = j.getJSONArray("bars");
+            for (int i = 0; i < BAND_COUNT; i++) {
+                final int b = jBars.getInt(i);
+                if (!(0 <= b && b <= BAR_MAX)) {
+                    return false;
+                }
+                mBars[i] = (short)b;
+            }
+        } catch (JSONException e) {
+            return false;
+        }
+        cleanMe();
+        return true;
+    }
+
+    // Storing everything as text might be useful if I ever want
+    // to do an export feature.
+    @Override
+    public String toJSON() {
+        try {
+            JSONObject j = new JSONObject();
+            JSONArray jBars = new JSONArray();
+            for (short s : mBars) {
+                jBars.put(s);
+            }
+            j.put("bars", jBars);
+            j.put("minvol", mMinVol);
+            j.put("period", mPeriod);
+            return j.toString();
+        } catch (JSONException e) {
+            throw new RuntimeException("impossible");
+        }
     }
 
     // band: The index number of the bar.
