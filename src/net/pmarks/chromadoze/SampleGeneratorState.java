@@ -32,6 +32,9 @@ public class SampleGeneratorState {
     // How many final full-size chunks to generate.
     private static final int N_LARGE_CHUNKS = 20;
 
+    // How many chunks overall.
+    private static final int N_TOTAL_CHUNKS = N_SMALL_CHUNKS + N_LARGE_CHUNKS;
+
     // How many large chunks to use for estimating the global volume.
     private static final int N_VOLUME_CHUNKS = 4;
 
@@ -39,7 +42,8 @@ public class SampleGeneratorState {
     private static final int SMALL_CHUNK_SIZE = 8192;
     private static final int LARGE_CHUNK_SIZE = 65536;
 
-    private int mChunkNumber = 0;
+    // Begin in the "done" state.
+    private int mChunkNumber = N_TOTAL_CHUNKS;
 
     public void reset() {
         mChunkNumber = 0;
@@ -50,7 +54,7 @@ public class SampleGeneratorState {
     }
 
     public boolean done() {
-        return mChunkNumber >= N_SMALL_CHUNKS + N_LARGE_CHUNKS;
+        return mChunkNumber >= N_TOTAL_CHUNKS;
     }
 
     public int getStage() {
@@ -79,7 +83,7 @@ public class SampleGeneratorState {
     }
 
     public int getPercent() {
-        return mChunkNumber * 100 / (N_SMALL_CHUNKS + N_LARGE_CHUNKS);
+        return mChunkNumber * 100 / N_TOTAL_CHUNKS;
     }
 
     public int getChunkSize() {
