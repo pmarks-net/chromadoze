@@ -17,42 +17,47 @@
 
 package net.pmarks.chromadoze;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.os.Process;
 import edu.emory.mathcs.jtransforms.dct.FloatDCT_1D;
 
 public class SampleGenerator {
-    private final Handler mHandler;
-    private final Worker mWorkerThread;
-    private SpectrumData mPendingSpectrum;
     private final NoiseService mNoiseService;
     private final AudioParams mParams;
     private final SampleShuffler mSampleShuffler;
+    private final Thread mWorkerThread;
 
+    // Communication variables; must be synchronized.
+    private boolean mStopping;
+    private SpectrumData mPendingSpectrum;
+
+    // Variables accessed from the thread only.
     private int mLastDctSize = -1;
     private FloatDCT_1D mDct;
     private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
 
-    // Chunk-making progress:
-    private SpectrumData mSpectrum;
-    private final SampleGeneratorState mState;
-
-    // 'random' will only be used from one thread.
     public SampleGenerator(NoiseService noiseService, AudioParams params,
             SampleShuffler sampleShuffler) {
         mNoiseService = noiseService;
         mParams = params;
         mSampleShuffler = sampleShuffler;
-        mState = new SampleGeneratorState();
 
-        mWorkerThread = new Worker();
+        mWorkerThread = new Thread("SampleGeneratorThread") {
+            @Override
+            public void run() {
+                try {
+                    threadLoop();
+                } catch (StopException e) {
+                }
+            }
+        };
         mWorkerThread.start();
-        mHandler = mWorkerThread.getHandler();
     }
 
     public void stopThread() {
-        mHandler.postAtFrontOfQueue(stopLooping);
+        synchronized (this) {
+            mStopping = true;
+            notify();
+        }
         try {
             mWorkerThread.join();
         } catch (InterruptedException e) {
@@ -61,10 +66,60 @@ public class SampleGenerator {
 
     public synchronized void updateSpectrum(SpectrumData spectrum) {
         mPendingSpectrum = spectrum;
-        mHandler.postAtFrontOfQueue(startNewChunks);
+        notify();
     }
 
-    private synchronized SpectrumData popPendingSpectrum() {
+    private void threadLoop() throws StopException {
+        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+
+        // Chunk-making progress:
+        final SampleGeneratorState state = new SampleGeneratorState();
+        SpectrumData spectrum = null;
+
+        while (true) {
+            // This does one of 3 things:
+            // - Throw StopException if stopThread() was called.
+            // - Check if a new spectrum is waiting.
+            // - Block if there's no work to do.
+            final boolean doWait = state.done();
+            final SpectrumData newSpectrum = popPendingSpectrum(doWait);
+            if (newSpectrum != null && !newSpectrum.sameSpectrum(spectrum)) {
+                spectrum = newSpectrum;
+                state.reset();
+                mNoiseService.updatePercentAsync(state.getPercent());
+            } else if (doWait) {
+                // Nothing changed.  Keep waiting.
+                continue;
+            }
+
+            // Generate the next chunk of sound.
+            float[] dctData = doIDCT(state.getChunkSize(), spectrum);
+            if (mSampleShuffler.handleChunk(dctData, state.getStage())) {
+                // Not dropped.
+                state.advance();
+                mNoiseService.updatePercentAsync(state.getPercent());
+            }
+
+            if (state.done()) {
+                // No chunks left; save RAM.
+                mDct = null;
+                mLastDctSize = -1;
+            }
+        }
+    }
+
+    private synchronized SpectrumData popPendingSpectrum(boolean doWait)
+            throws StopException {
+        if (doWait && !mStopping && mPendingSpectrum == null) {
+            // Wait once.  The retry loop is in the caller.
+            try {
+                wait();
+            } catch (InterruptedException e) {
+            }
+        }
+        if (mStopping) {
+            throw new StopException();
+        }
         try {
             return mPendingSpectrum;
         } finally {
@@ -72,87 +127,14 @@ public class SampleGenerator {
         }
     }
 
-    private static class Worker extends Thread {
-        private Handler mHandler;
-
-        Worker() {
-            super("SampleGeneratorThread");
-        }
-
-        @Override
-        public void run() {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-            Looper.prepare();
-            synchronized (this) {
-                mHandler = new Handler();
-                notifyAll();
-            }
-            Looper.loop();
-        }
-
-        public synchronized Handler getHandler() {
-            while (mHandler == null) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                }
-            }
-            return mHandler;
-        }
-    }
-
-    private final Runnable startNewChunks = new Runnable() {
-        public void run() {
-            SpectrumData spectrum = popPendingSpectrum();
-            if (spectrum == null || spectrum.sameSpectrum(mSpectrum)) {
-                // No new spectrum available.
-                return;
-            }
-            mState.reset();
-            mNoiseService.updatePercentAsync(mState.getPercent());
-            mHandler.post(makeNextChunk);
-            mSpectrum = spectrum;
-        }
-    };
-
-    private final Runnable makeNextChunk = new Runnable() {
-        public void run() {
-            if (mState.done()) {
-                // No chunks left to make.
-                mDct = null;
-                mLastDctSize = -1;
-                return;
-            }
-
-            int dctSize = mState.getChunkSize();
-            float[] dctData = doIDCT(dctSize);
-
-            if (mSampleShuffler.handleChunk(dctData, mState.getStage())) {
-                // Not dropped.
-                mState.advance();
-                mNoiseService.updatePercentAsync(mState.getPercent());
-            }
-            mHandler.post(makeNextChunk);
-        }
-
-    };
-
-    private final Runnable stopLooping = new Runnable() {
-        public void run() {
-            mHandler.removeCallbacks(startNewChunks);
-            mHandler.removeCallbacks(makeNextChunk);
-            Looper.myLooper().quit();
-        }
-    };
-
-    private float[] doIDCT(int dctSize) {
+    private float[] doIDCT(int dctSize, SpectrumData spectrum) {
         if (dctSize != mLastDctSize) {
             mDct = new FloatDCT_1D(dctSize);
             mLastDctSize = dctSize;
         }
         float[] dctData = new float[dctSize];
 
-        mSpectrum.fill(dctData, mParams.SAMPLE_RATE);
+        spectrum.fill(dctData, mParams.SAMPLE_RATE);
 
         // Multiply by a block of white noise.
         for (int i = 0; i < dctSize;) {
@@ -167,4 +149,7 @@ public class SampleGenerator {
         return dctData;
     }
 
+    private static class StopException extends Exception {
+        private static final long serialVersionUID = 8289081873784217385L;
+    }
 }
