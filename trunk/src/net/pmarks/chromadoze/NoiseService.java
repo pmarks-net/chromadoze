@@ -116,12 +116,16 @@ public class NoiseService extends Service {
 
     // Create an icon for the notification bar.
     private Notification makeNotify() {
+        // android:launchMode="singleTask" ensures that the latest instance
+        // of the Activity will be reachable from the Launcher.  However, a
+        // naive Intent can still overwrite the task, so we track down the
+        // existing task by pretending to be the Launcher.
         PendingIntent contentIntent = PendingIntent.getActivity(
                 this,
                 0,
                 new Intent(this, ChromaDoze.class)
-                    .setAction(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_LAUNCHER),
+                        .setAction(Intent.ACTION_MAIN)
+                        .addCategory(Intent.CATEGORY_LAUNCHER),
                 0);
 
         Notification n = new NotificationCompat.Builder(this)
