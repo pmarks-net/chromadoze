@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:divider="?android:attr/dividerVertical"
+    android:dividerPadding="8dp"
+    android:orientation="horizontal"
+    android:showDividers="middle" >
+
+    <FrameLayout
+        android:id="@+id/notification_insert"
+        android:layout_width="0dp"
+        android:layout_height="fill_parent"
+        android:layout_weight="1" />
+
+    <ImageButton
+        android:id="@+id/stop_button"
+        style="?android:attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:contentDescription="@string/stop"
+        android:src="@drawable/av_stop" />
+
+</LinearLayout>

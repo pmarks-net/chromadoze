@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Chroma Doze</string>
-    <string name="select_to_configure">Select to configure noise generation.</string>
+    <string name="notification_text">Touch to resume application.</string>
     <string name="about_menu">About</string>
     <string name="amp_wave">Amplitude Wave</string>
     <string name="generating">Generating IDCT blocks:&#160;</string>
     <string name="play_stop">Play/Stop</string>
+    <string name="stop">Stop</string>
     <string name="lock_unlock">Lock/Unlock Input</string>
     <string name="memory">Memory</string>
     <string name="unsaved">(unsaved)</string>

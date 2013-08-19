@@ -25,12 +25,13 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
+import android.widget.RemoteViews;
 
 public class NoiseService extends Service {
     public static final int PERCENT_MSG = 1;
@@ -72,6 +73,12 @@ public class NoiseService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // Handle the notification bar Stop button.
+        if (intent.getBooleanExtra("stop", false)) {
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         SpectrumData spectrum = intent.getParcelableExtra("spectrum");
 
         // Synchronous updates.
@@ -109,19 +116,44 @@ public class NoiseService extends Service {
 
     // Create an icon for the notification bar.
     private Notification makeNotify() {
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addNextIntentWithParentStack(new Intent(this, ChromaDoze.class));
-        PendingIntent contentIntent = stackBuilder.getPendingIntent(
-                0, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent contentIntent = PendingIntent.getActivity(
+                this,
+                0,
+                new Intent(this, ChromaDoze.class)
+                    .setAction(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_LAUNCHER),
+                0);
 
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+        Notification n = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_stat_bars)
                 .setWhen(0)
                 .setContentTitle(getString(R.string.app_name))
-                .setContentText(getString(R.string.select_to_configure))
-                .setContentIntent(contentIntent);
+                .setContentText(getString(R.string.notification_text))
+                .setContentIntent(contentIntent)
+                .build();
 
-        return mBuilder.build();
+        // Add a Stop button to the Notification bar.  Not trying to support
+        // this pre-ICS, because the click detection and styling are weird.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            addButtonToNotification(n);
+        }
+        return n;
+    }
+
+    void addButtonToNotification(Notification n) {
+        // Create a new RV with a Stop button.
+        RemoteViews rv = new RemoteViews(
+                getPackageName(), R.layout.notification_with_stop_button);
+        PendingIntent pendingIntent = PendingIntent.getService(
+                this,
+                0,
+                new Intent(this, NoiseService.class).putExtra("stop", true),
+                0);
+        rv.setOnClickPendingIntent(R.id.stop_button, pendingIntent);
+
+        // Insert the original RV into the new one.
+        rv.addView(R.id.notification_insert, n.contentView);
+        n.contentView = rv;
     }
 
     // Call updatePercent() from any thread.
