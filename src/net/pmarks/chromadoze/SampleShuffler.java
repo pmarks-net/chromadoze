@@ -434,9 +434,19 @@ class SampleShuffler {
             if (mPreventStart || mTrack != null) {
                 return false;
             }
-            mTrack = mParams.makeAudioTrack();
-            mTrack.play();
-            return true;
+            // I occasionally receive this crash report:
+            // "java.lang.IllegalStateException: play() called on uninitialized AudioTrack."
+            // Perhaps it just needs a retry loop?
+            for (int i = 1; ; i++) {
+                mTrack = mParams.makeAudioTrack();
+                try {
+                    mTrack.play();
+                    return true;
+                } catch (IllegalStateException e) {
+                    if (i >= 3) throw e;
+                    Log.w("PlaybackThread", "Failed to play(); retrying:", e);
+                }
+            }
         }
 
         public synchronized void stopPlaying() {
