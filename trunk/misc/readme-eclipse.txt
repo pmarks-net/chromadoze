@@ -30,3 +30,8 @@ Enable the Support Libraries:
 Optional: enable Proguard, to build a smaller .apk
 - Edit project.properties, and uncomment proguard.config
 - Note that my proguard-project.txt disables obfuscation.
+
+Be sure to set Eclipse to use 4-space soft tabs:
+- Window > Preferences
+- Search for "space"
+- Change in 3 places: General, Java, and XML.

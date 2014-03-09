@@ -86,6 +86,14 @@ class SampleShuffler {
         } catch (InterruptedException e) {
         }
     }
+    
+    public interface VolumeListener {
+        public enum VolumeLevel { SILENT, DUCK, NORMAL };
+        public void setVolume(VolumeLevel v);
+    }    
+    public VolumeListener getVolumeListener() {
+        return mPlaybackThread;
+    }    
 
     public synchronized void setAmpWave(float minVol, float period) {
         if (mAmpWave.mMinVol != minVol || mAmpWave.mPeriod != period) {
@@ -421,7 +429,7 @@ class SampleShuffler {
         }
     }
 
-    private class PlaybackThread extends Thread {
+    private class PlaybackThread extends Thread implements VolumeListener {
 
         PlaybackThread() {
             super("SampleShufflerThread");
@@ -429,6 +437,7 @@ class SampleShuffler {
 
         private boolean mPreventStart = false;
         private AudioTrack mTrack;
+        private VolumeLevel mVolume = VolumeLevel.NORMAL;
 
         private synchronized boolean startPlaying() {
             if (mPreventStart || mTrack != null) {
@@ -436,15 +445,17 @@ class SampleShuffler {
             }
             // I occasionally receive this crash report:
             // "java.lang.IllegalStateException: play() called on uninitialized AudioTrack."
-            // Perhaps it just needs a retry loop?
+            // Perhaps it just needs a retry loop?  I have no idea if this helps at all.
             for (int i = 1; ; i++) {
                 mTrack = mParams.makeAudioTrack();
+                setVolumeInternal();
                 try {
                     mTrack.play();
                     return true;
                 } catch (IllegalStateException e) {
                     if (i >= 3) throw e;
                     Log.w("PlaybackThread", "Failed to play(); retrying:", e);
+                    System.gc();
                 }
             }
         }
@@ -455,6 +466,31 @@ class SampleShuffler {
             } else {
                 mTrack.stop();
             }
+        }
+        
+        // Manage "Audio Focus" by changing the volume level.
+        public synchronized void setVolume(VolumeLevel v) {
+            mVolume = v;
+            if (mTrack != null) {
+                setVolumeInternal();
+            }
+        }
+        
+        private void setVolumeInternal() {
+            float fv;
+            switch (mVolume) {
+            case SILENT:
+                fv = AudioTrack.getMinVolume();
+                break;
+            case DUCK:
+                fv = AudioTrack.getMinVolume() +
+                    (AudioTrack.getMaxVolume() - AudioTrack.getMinVolume()) * 0.1f;
+                break;
+            default:
+                fv = AudioTrack.getMaxVolume();
+                break;
+            }
+            mTrack.setStereoVolume(fv, fv);
         }
 
         @Override

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.pmarks.chromadoze"
-    android:versionCode="12"
-    android:versionName="3.1" >
+    android:versionCode="13"
+    android:versionName="3.2-dev" >
 
     <uses-sdk
         android:minSdkVersion="7"
-        android:targetSdkVersion="18" />
-    
+        android:targetSdkVersion="19" />
+
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/chromadoze_icon"
@@ -19,12 +19,17 @@
             android:name=".ChromaDoze"
             android:label="@string/app_name"
             android:launchMode="singleTask" >
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver android:name=".MediaButtonReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
 
         <service android:name=".NoiseService" />
     </application>

@@ -98,8 +98,7 @@ public class UIState {
     }
 
     public void stopSending() {
-        Intent intent = new Intent(mContext, NoiseService.class);
-        mContext.stopService(intent);
+        NoiseService.sendStopIntent(mContext);
     }
 
 
