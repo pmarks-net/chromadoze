@@ -43,6 +43,7 @@ public class NoiseService extends Service {
 
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
+    private AudioFocusHelper mAudioFocusHelper = null;
 
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
@@ -69,6 +70,11 @@ public class NoiseService extends Service {
         mWakeLock.acquire();
 
         startForeground(NOTIFY_ID, makeNotify());
+        
+        if (android.os.Build.VERSION.SDK_INT >= 8) {
+            mAudioFocusHelper = new AudioFocusHelper(this, mSampleShuffler.getVolumeListener());
+            mAudioFocusHelper.requestFocus();
+        }        
     }
 
     @Override
@@ -86,7 +92,7 @@ public class NoiseService extends Service {
 
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
-
+        
         // If the device is under enough memory pressure to kill a foreground
         // service, it's probably best to wait for the user to restart it.
         //
@@ -95,7 +101,7 @@ public class NoiseService extends Service {
         // "ActiveServices.java" to see how that works.
         return START_NOT_STICKY;
     }
-
+    
     @Override
     public void onDestroy() {
         mSampleGenerator.stopThread();
@@ -103,6 +109,11 @@ public class NoiseService extends Service {
 
         mPercentHandler.removeMessages(PERCENT_MSG);
         updatePercent(-1);
+        
+        if (mAudioFocusHelper != null) {
+            mAudioFocusHelper.abandonFocus();
+            mAudioFocusHelper = null;
+        }
 
         stopForeground(true);
         mWakeLock.release();
@@ -193,4 +204,9 @@ public class NoiseService extends Service {
     public interface PercentListener {
         void onNoiseServicePercentChange(int percent);
     }
+    
+    public static void sendStopIntent(Context ctx) {
+        Intent intent = new Intent(ctx, NoiseService.class);
+        ctx.stopService(intent);
+    }    
 }
