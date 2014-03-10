@@ -42,6 +42,7 @@ individual streams below 32767 / sqrt(2), or ~23170.
 */
 
 class SampleShuffler {
+    // These lengths are measured in samples.
     public static final int SINE_LEN = 1 << 9;
     public static final int FADE_LEN = SINE_LEN + 1;
     public static final float BASE_AMPLITUDE = 20000;
@@ -290,8 +291,8 @@ class SampleShuffler {
                 // Grab the chunk of data that would've been played if it
                 // weren't for this interruption.  Later, we'll cross-fade it
                 // with the new data to avoid pops.
-                short[] peek = new short[FADE_LEN];
-                this.fillBuffer(peek);
+                final short[] peek = new short[FADE_LEN * AudioParams.SHORTS_PER_SAMPLE];
+                fillBuffer(peek);
                 mAlternateFuture = peek;
             }
             resetFillState(null);
@@ -302,8 +303,9 @@ class SampleShuffler {
         mLastRandomChunk = -1;
         return oldChunks;
     }
-
+    
     // Returns: the current mAmpWave.
+    // Requires: out has room for at least FADE_LEN samples.
     private synchronized AmpWave fillBuffer(short[] out) {
         if (mChunk0 == null) {
             // This should only happen after a reset.
@@ -311,35 +313,37 @@ class SampleShuffler {
         }
 
         int outPos = 0;
+        outerLoop:
         while (true) {
             // Get the index within mChunk0 where the fade-out begins.
             final int firstFadeSample = mChunk0.length - FADE_LEN;
 
+            // For cheap stereo, just play the same chunk backwards.
+            int negativeFillCursor = mChunk0.length - mFillCursor - 1;
+            
             // Fill from the non-faded part of the first chunk.
-            if (mFillCursor < firstFadeSample) {
-                final int toWrite = Math.min(firstFadeSample - mFillCursor, out.length - outPos);
-                System.arraycopy(mChunk0, mFillCursor, out, outPos, toWrite);
-                mFillCursor += toWrite;
-                outPos += toWrite;
-            }
-
-            if (outPos >= out.length) {
-                break;
+            while (mFillCursor < firstFadeSample) {
+                out[outPos++] = mChunk0[mFillCursor++];
+                out[outPos++] = mChunk0[negativeFillCursor--];
+                if (outPos >= out.length) {
+                    break outerLoop;
+                }
             }
 
             // Fill from the crossfade between two chunks.
             if (mChunk1 == null) {
                 mChunk1 = getRandomChunk();
             }
-            while (mFillCursor < mChunk0.length && outPos < out.length) {
-                out[outPos] = (short)(mChunk0[mFillCursor] +
+            while (mFillCursor < mChunk0.length) {
+                out[outPos++] = (short)(mChunk0[mFillCursor] +
                         mChunk1[mFillCursor - firstFadeSample]);
+                out[outPos++] = (short)(mChunk0[negativeFillCursor] +
+                        mChunk1[negativeFillCursor + firstFadeSample]);
                 mFillCursor++;
-                outPos++;
-            }
-
-            if (outPos >= out.length) {
-                break;
+                negativeFillCursor--;
+                if (outPos >= out.length) {
+                    break outerLoop;
+                }
             }
 
             // Consumed all the fade data; switch to the next chunk.
@@ -352,11 +356,15 @@ class SampleShuffler {
             // than fading between two chunks, because the envelopes aren't
             // precomputed.  Also, this might result in clipping if the inputs
             // happen to be in the middle of a crossfade already.
+            outPos = 0;
             for (int i = 0; i < FADE_LEN; i++) {
-                float sample = mAlternateFuture[i] * mSine[SINE_LEN + i] + out[i] * mSine[i];
-                if (sample > 32767f) sample = 32767f;
-                if (sample < -32767f) sample = -32767f;
-                out[i] = (short)sample;
+                for (int chan = 0; chan < 2; chan++) {
+                    float sample = (mAlternateFuture[outPos] * mSine[SINE_LEN + i] +
+                            out[outPos] * mSine[i]);
+                    if (sample > 32767f) sample = 32767f;
+                    if (sample < -32767f) sample = -32767f;
+                    out[outPos++] = (short)sample;
+                }
             }
             mAlternateFuture = null;
         }
@@ -421,10 +429,15 @@ class SampleShuffler {
             if (mTweakedSine == null) {
                 return;
             }
-            for (int i = 0; i < buf.length; i++) {
+            int outPos = 0;
+            while (outPos < buf.length) {
                 // Multiply by [0, 1) using integer math.
-                buf[i] = (short)((buf[i] * mTweakedSine[mPos / SINE_STRETCH]) >> 15);
+                final short mult = mTweakedSine[mPos / SINE_STRETCH];
                 mPos = (mPos + mSpeed) & (SINE_PERIOD - 1);
+                for (int chan = 0; chan < 2; chan++) {
+                    buf[outPos] = (short)((buf[outPos] * mult) >> 15);
+                    outPos++;
+                }
             }
         }
     }
@@ -503,7 +516,8 @@ class SampleShuffler {
 
             // Aim to write half of the AudioTrack's buffer per iteration,
             // but FADE_LEN is the bare minimum to avoid errors.
-            short[] buf = new short[Math.max(mParams.BUF_SHORTS / 2, FADE_LEN)];
+            final short[] buf = new short[Math.max(mParams.BUF_SAMPLES / 2, FADE_LEN) *
+                                          AudioParams.SHORTS_PER_SAMPLE];
             AmpWave oldAmpWave = null;
             int result;
             do {

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 
 import junit.framework.Assert;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 
 public class UIState {

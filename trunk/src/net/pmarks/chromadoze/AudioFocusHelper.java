@@ -43,7 +43,7 @@ public class AudioFocusHelper implements AudioManager.OnAudioFocusChangeListener
     public void requestFocus() {
         mAudioManager.registerMediaButtonEventReceiver(mRemoteControlReceiver);
         // I'm too lazy to check the return value.
-        mAudioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+        mAudioManager.requestAudioFocus(this, AudioParams.STREAM_TYPE, AudioManager.AUDIOFOCUS_GAIN);
     }
 
     public void abandonFocus() {
