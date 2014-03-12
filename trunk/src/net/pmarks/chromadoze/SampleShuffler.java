@@ -18,6 +18,8 @@
 package net.pmarks.chromadoze;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 import android.media.AudioTrack;
 import android.os.Process;
@@ -50,17 +52,34 @@ class SampleShuffler {
 
     private final AudioParams mParams;
 
-    private ArrayList<AudioChunk> mAudioChunks = null;
-    private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
-    private int mLastRandomChunk = -1;
+    private List<AudioChunk> mAudioChunks = null;
+    private final ShuffleBag mShuffleBag = new ShuffleBag();
 
     private float mGlobalVolumeFactor;
 
     // Sine wave, 4*SINE_LEN points, from [0, 2pi).
-    private final float mSine[];
+    private static final float SINE[];
+    static {
+        SINE = new float[4*SINE_LEN];
+        // First quarter, compute directly.
+        for (int i = 0; i <= SINE_LEN; i++) {
+            double progress = (double)i / SINE_LEN;
+            SINE[i] = (float)Math.sin(progress * Math.PI / 2.0);
+        }
+        // Second quarter, flip the first horizontally.
+        for (int i = SINE_LEN + 1; i < 2*SINE_LEN; i++) {
+            SINE[i] = SINE[2*SINE_LEN - i];
+        }
+        // Third/Fourth quarters, flip the first two vertically.
+        for (int i = 2*SINE_LEN; i < 4*SINE_LEN; i++) {
+            SINE[i] = -SINE[i - 2*SINE_LEN];
+        }
+    }
 
     // Filler state.
-    private int mFillCursor;
+    // Note that it's essential for this to be synchronized, because
+    // the shuffle thread can steal the next fillBuffer() at any time.
+    private int mCursor0;
     private short mChunk0[];
     private short mChunk1[];
     private short mAlternateFuture[] = null;
@@ -71,10 +90,10 @@ class SampleShuffler {
 
     public SampleShuffler(AudioParams params) {
         mParams = params;
-        mSine = makeSineCurve();
 
         // Start playing silence until real data arrives.
-        exchangeChunk(new AudioChunk(new float[FADE_LEN * 2]), true);
+        mGlobalVolumeFactor = 0;
+        exchangeChunk(withPcm(new AudioChunk(new float[FADE_LEN * 2])), true);
 
         mPlaybackThread = new PlaybackThread();
         mPlaybackThread.start();
@@ -101,37 +120,93 @@ class SampleShuffler {
             mAmpWave = new AmpWave(minVol, period);
         }
     }
+    
+    // This class keeps track of a set of numbers, and dishes them out in
+    // a random order, while maintaining a minimum distance between two
+    // occurrences of the same number.
+    private static class ShuffleBag {
+        // Chunks that have never been played before, in arbitrary order.
+        private final List<Integer> newQueue = new ArrayList<Integer>();
+        // Recent chunks sit here to avoid being played too soon.
+        private final List<Integer> feederQueue = new ArrayList<Integer>();
+        // Randomly draw chunks from here.
+        private List<Integer> drawPile = new ArrayList<Integer>();
+        // Chunks go here once they've been played.
+        private List<Integer> discardPile = new ArrayList<Integer>();
+        
+        private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
 
-    // Generate one period of a sine wave.
-    private static float[] makeSineCurve() {
-        float out[] = new float[4*SINE_LEN];
-        // First quarter, compute directly.
-        for (int i = 0; i <= SINE_LEN; i++) {
-            double progress = (double)i / SINE_LEN;
-            out[i] = (float)Math.sin(progress * Math.PI / 2.0);
+        public void clear() {
+            newQueue.clear();
+            feederQueue.clear();
+            drawPile.clear();
+            discardPile.clear();
         }
-        // Second quarter, flip the first horizontally.
-        for (int i = SINE_LEN + 1; i < 2*SINE_LEN; i++) {
-            out[i] = out[2*SINE_LEN - i];
+        
+        public void put(int x, boolean neverPlayed) {
+            // Put never-played chunks into the newQueue.
+            // There's no ideal place for the old chunks, but drawPile is simplest.
+            (neverPlayed ? newQueue : drawPile).add(x);
         }
-        // Third/Fourth quarters, flip the first two vertically.
-        for (int i = 2*SINE_LEN; i < 4*SINE_LEN; i++) {
-            out[i] = -out[i - 2*SINE_LEN];
+        
+        public int getNext() {
+            if (!newQueue.isEmpty()) {
+                return discard(pop(newQueue));
+            }
+            if (drawPile.isEmpty()) {
+                if (!feederQueue.isEmpty()) {
+                    throw new IllegalStateException();
+                }
+                // Everything is now in discardPile.  Move the recently-played chunks
+                // to feederQueue.  Note that pop(feederQueue) will yield chunks in
+                // the same order they were discarded.
+                final int feederSize = discardPile.size() / 2;
+                for (int i = 0; i < feederSize; i++) {
+                    feederQueue.add(pop(discardPile));
+                }
+                // Move everything else to the drawPile.
+                final List<Integer> empty = drawPile;
+                drawPile = discardPile;
+                discardPile = empty;
+            }
+            if (drawPile.isEmpty()) {
+                throw new NoSuchElementException();
+            }
+            final int pos = mRandom.nextInt(drawPile.size());
+            final int ret = drawPile.get(pos);
+            if (!feederQueue.isEmpty()) {
+                // Overwrite the vacant space.
+                drawPile.set(pos, pop(feederQueue));
+            } else {
+                // Move last element to the vacant space.
+                try {
+                    drawPile.set(pos, pop(drawPile));
+                } catch (IndexOutOfBoundsException e) {
+                    // Last element *was* the vacant space.
+                }
+            }
+            return discard(ret);
         }
-        return out;
+        
+        private int discard(int x) {
+            discardPile.add(x);
+            return x;
+        }
+        
+        private static int pop(List<Integer> list) {
+            return list.remove(list.size() - 1);
+        }
     }
-
-    private class AudioChunk {
-        private final int mLength;
+    
+    private static class AudioChunk {
+        private boolean mNeverPlayed = true;
         private float[] mFloatData;
         private short[] mPcmData;
         private float mMaxAmplitude;
 
         public AudioChunk(float[] floatData) {
             mFloatData = floatData;
-            mLength = mFloatData.length;
             computeMaxAmplitude();
-            buildPcmData(BASE_AMPLITUDE / mMaxAmplitude);
         }
 
         // Figure out the max amplitude of this chunk once.
@@ -148,27 +223,33 @@ class SampleShuffler {
         }
 
         public void buildPcmData(float volumeFactor) {
-            if (mLength < FADE_LEN * 2) {
-                throw new IllegalArgumentException("Undersized chunk: " + mLength);
+            final int len = mFloatData.length;
+            if (len < FADE_LEN * 2) {
+                throw new IllegalArgumentException("Undersized chunk: " + len);
             }
-            mPcmData = new short[mLength];
+            mPcmData = new short[len];
             for (int i = 0; i < FADE_LEN; i++) {
                 // Fade in using sin(x), x=[0,pi/2]
-                float fadeFactor = mSine[i];
+                float fadeFactor = SINE[i];
                 mPcmData[i] = (short)(mFloatData[i] * volumeFactor * fadeFactor);
             }
-            for (int i = FADE_LEN; i < mLength - FADE_LEN; i++) {
+            for (int i = FADE_LEN; i < len - FADE_LEN; i++) {
                 mPcmData[i] = (short)(mFloatData[i] * volumeFactor);
             }
-            for (int i = mLength - FADE_LEN; i < mLength; i++) {
-                int j = i - (mLength - FADE_LEN);
+            for (int i = len - FADE_LEN; i < len; i++) {
+                int j = i - (len - FADE_LEN);
                 // Fade out using cos(x), x=[0,pi/2]
-                float fadeFactor = mSine[SINE_LEN + j];
+                float fadeFactor = SINE[SINE_LEN + j];
                 mPcmData[i] = (short)(mFloatData[i] * volumeFactor * fadeFactor);
             }
         }
+        
+        public boolean neverPlayed() {
+            return mNeverPlayed;
+        }
 
         public short[] getPcmData() {
+            mNeverPlayed = false;
             return mPcmData;
         }
 
@@ -204,8 +285,7 @@ class SampleShuffler {
     // Add a new chunk, deleting all the earlier ones.
     private void handleChunkPioneer(AudioChunk newChunk, boolean notify) {
         mGlobalVolumeFactor = BASE_AMPLITUDE / newChunk.getMaxAmplitude();
-        newChunk.buildPcmData(mGlobalVolumeFactor);
-        exchangeChunk(newChunk, notify);
+        exchangeChunk(withPcm(newChunk), notify);
     }
 
     // Add a new chunk.  If it would clip, make everything quieter.
@@ -213,8 +293,7 @@ class SampleShuffler {
         if (newChunk.getMaxAmplitude() * mGlobalVolumeFactor > CLIP_AMPLITUDE) {
             changeGlobalVolume(newChunk.getMaxAmplitude(), newChunk);
         } else {
-            newChunk.buildPcmData(mGlobalVolumeFactor);
-            addChunk(newChunk);
+            addChunk(withPcm(newChunk));
         }
     }
 
@@ -227,8 +306,7 @@ class SampleShuffler {
         if (maxAmplitude * mGlobalVolumeFactor >= BASE_AMPLITUDE) {
             changeGlobalVolume(maxAmplitude, newChunk);
         } else {
-            newChunk.buildPcmData(mGlobalVolumeFactor);
-            addChunk(newChunk);
+            addChunk(withPcm(newChunk));
         }
 
         // Delete the now-unused float data, to conserve RAM.
@@ -242,8 +320,7 @@ class SampleShuffler {
         if (newChunk.getMaxAmplitude() * mGlobalVolumeFactor > CLIP_AMPLITUDE) {
             return false;
         } else {
-            newChunk.buildPcmData(mGlobalVolumeFactor);
-            addChunk(newChunk);
+            addChunk(withPcm(newChunk));
             return true;
         }
     }
@@ -252,40 +329,46 @@ class SampleShuffler {
     // Add a new one first, so the chunk list is never completely empty.
     private void changeGlobalVolume(float maxAmplitude, AudioChunk newChunk) {
         mGlobalVolumeFactor = BASE_AMPLITUDE / maxAmplitude;
-        newChunk.buildPcmData(mGlobalVolumeFactor);
-        ArrayList<AudioChunk> oldChunks = exchangeChunk(newChunk, false);
+        List<AudioChunk> oldChunks = exchangeChunk(withPcm(newChunk), false);
+        List<AudioChunk> playedChunks = new ArrayList<AudioChunk>();
+
+        // First, process the never-played chunks.
         for (AudioChunk c : oldChunks) {
-            c.buildPcmData(mGlobalVolumeFactor);
-            addChunk(c);
+            if (c.neverPlayed()) {
+                addChunk(withPcm(c));
+            } else {
+                playedChunks.add(c);
+            }
+        }
+        // Process the leftovers.
+        for (AudioChunk c : playedChunks) {
+            addChunk(withPcm(c));
         }
     }
-
+    
+    private AudioChunk withPcm(AudioChunk chunk) {
+        chunk.buildPcmData(mGlobalVolumeFactor);
+        return chunk;
+    }
+    
     private synchronized void resetFillState(short chunk0[]) {
-        // mFillCursor begins at the first non-faded sample, not at 0.
-        mFillCursor = FADE_LEN;
+        // mCursor0 begins at the first non-faded sample, not at 0.
+        mCursor0 = FADE_LEN;
         mChunk0 = chunk0;
         mChunk1 = null;
     }
 
     private synchronized short[] getRandomChunk() {
-        int size = mAudioChunks.size();
-        int pick;
-        // When possible, avoid picking the same chunk twice in a row.
-        if (mLastRandomChunk >= 0 && size > 1) {
-            pick = mRandom.nextInt(size - 1);
-            if (pick >= mLastRandomChunk) ++pick;
-        } else {
-            pick = mRandom.nextInt(size);
-        }
-        mLastRandomChunk = pick;
-        return mAudioChunks.get(pick).getPcmData();
+        return mAudioChunks.get(mShuffleBag.getNext()).getPcmData();
     }
-
+    
     private synchronized void addChunk(AudioChunk chunk) {
+        final int pos = mAudioChunks.size();
         mAudioChunks.add(chunk);
+        mShuffleBag.put(pos, chunk.neverPlayed());
     }
 
-    private synchronized ArrayList<AudioChunk> exchangeChunk(AudioChunk chunk, boolean notify) {
+    private synchronized List<AudioChunk> exchangeChunk(AudioChunk chunk, boolean notify) {
         if (notify) {
             if (mAudioChunks != null && mAlternateFuture == null) {
                 // Grab the chunk of data that would've been played if it
@@ -297,15 +380,17 @@ class SampleShuffler {
             }
             resetFillState(null);
         }
-        ArrayList<AudioChunk> oldChunks = mAudioChunks;
+        List<AudioChunk> oldChunks = mAudioChunks;
         mAudioChunks = new ArrayList<AudioChunk>();
         mAudioChunks.add(chunk);
-        mLastRandomChunk = -1;
+        mShuffleBag.clear();
+        mShuffleBag.put(0, chunk.neverPlayed());
         return oldChunks;
     }
-    
-    // Returns: the current mAmpWave.
+
     // Requires: out has room for at least FADE_LEN samples.
+    // Returns: the current mAmpWave.
+    //
     private synchronized AmpWave fillBuffer(short[] out) {
         if (mChunk0 == null) {
             // This should only happen after a reset.
@@ -317,14 +402,14 @@ class SampleShuffler {
         while (true) {
             // Get the index within mChunk0 where the fade-out begins.
             final int firstFadeSample = mChunk0.length - FADE_LEN;
-
-            // For cheap stereo, just play the same chunk backwards.
-            int negativeFillCursor = mChunk0.length - mFillCursor - 1;
             
-            // Fill from the non-faded part of the first chunk.
-            while (mFillCursor < firstFadeSample) {
-                out[outPos++] = mChunk0[mFillCursor++];
-                out[outPos++] = mChunk0[negativeFillCursor--];
+            // For cheap stereo, just play the same chunk backwards.
+            int reverseCursor0 = (mChunk0.length - 1) - mCursor0;
+            
+            // Fill from the non-faded middle of the first chunk.
+            while (mCursor0 < firstFadeSample) {
+                out[outPos++] = mChunk0[mCursor0++];
+                out[outPos++] = mChunk0[reverseCursor0--];
                 if (outPos >= out.length) {
                     break outerLoop;
                 }
@@ -334,19 +419,22 @@ class SampleShuffler {
             if (mChunk1 == null) {
                 mChunk1 = getRandomChunk();
             }
-            while (mFillCursor < mChunk0.length) {
-                out[outPos++] = (short)(mChunk0[mFillCursor] +
-                        mChunk1[mFillCursor - firstFadeSample]);
-                out[outPos++] = (short)(mChunk0[negativeFillCursor] +
-                        mChunk1[negativeFillCursor + firstFadeSample]);
-                mFillCursor++;
-                negativeFillCursor--;
+            int cursor1 = mCursor0 - firstFadeSample;
+            int reverseCursor1 = (mChunk1.length - 1) - cursor1;
+            while (mCursor0 < mChunk0.length) {
+                out[outPos++] = (short)(mChunk0[mCursor0++] + mChunk1[cursor1++]);
+                out[outPos++] = (short)(mChunk0[reverseCursor0--] + mChunk1[reverseCursor1--]);
                 if (outPos >= out.length) {
                     break outerLoop;
                 }
             }
+            
+            // Make sure we've consumed all the fade data.
+            if (cursor1 != FADE_LEN) {
+                throw new IllegalStateException("Out of sync");
+            }
 
-            // Consumed all the fade data; switch to the next chunk.
+            // Switch to the next chunk.
             resetFillState(mChunk1);
         }
 
@@ -359,8 +447,8 @@ class SampleShuffler {
             outPos = 0;
             for (int i = 0; i < FADE_LEN; i++) {
                 for (int chan = 0; chan < 2; chan++) {
-                    float sample = (mAlternateFuture[outPos] * mSine[SINE_LEN + i] +
-                            out[outPos] * mSine[i]);
+                    float sample = (mAlternateFuture[outPos] * SINE[SINE_LEN + i] +
+                            out[outPos] * SINE[i]);
                     if (sample > 32767f) sample = 32767f;
                     if (sample < -32767f) sample = -32767f;
                     out[outPos++] = (short)sample;
@@ -386,14 +474,14 @@ class SampleShuffler {
         // Same length as mSine, but shifted/stretched according to mMinAmp.
         // We want to do the multiply using integer math, so [0.0, 1.0] is
         // stored as [0, 32767].
-        private short mTweakedSine[];
+        private final short mTweakedSine[];
 
         private int mPos = (int)(SINE_PERIOD * .75);  // Quietest point.
         private int mSpeed;
 
         public AmpWave(float minVol, float period) {
             if (minVol > .999f || period < .001f) {
-                mAmpWave = null;
+                mTweakedSine = null;
                 mSpeed = 0;
             } else {
                 // Make sure the numbers stay reasonable.
@@ -404,7 +492,7 @@ class SampleShuffler {
                 mTweakedSine = new short[4*SINE_LEN];
                 float scale = (1f - minVol) / 2f;
                 for (int i = 0; i < mTweakedSine.length; i++) {
-                    mTweakedSine[i] = (short)((mSine[i] * scale + 1f - scale) * 32767f);
+                    mTweakedSine[i] = (short)((SINE[i] * scale + 1f - scale) * 32767f);
                 }
 
                 // When period == 1 sec, SAMPLE_RATE iterations should cover
