@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.pmarks.chromadoze"
     android:versionCode="13"
-    android:versionName="3.2-dev" >
+    android:versionName="3.2" >
 
     <uses-sdk
         android:minSdkVersion="7"
