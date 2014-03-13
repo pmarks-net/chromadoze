@@ -105,6 +105,10 @@ class SampleShuffler {
             mPlaybackThread.join();
         } catch (InterruptedException e) {
         }
+        // Explicitly discard chunks to make life easier for the garbage
+        // collector.  Comment this out to make memory leaks more obvious.
+        // (Hopefully, I fixed the leak that prompted me to do this.)
+        mAudioChunks = null;
     }
     
     public interface VolumeListener {
