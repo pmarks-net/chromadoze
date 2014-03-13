@@ -72,7 +72,9 @@ public class NoiseService extends Service {
         startForeground(NOTIFY_ID, makeNotify());
         
         if (android.os.Build.VERSION.SDK_INT >= 8) {
-            mAudioFocusHelper = new AudioFocusHelper(this, mSampleShuffler.getVolumeListener());
+            // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
+            mAudioFocusHelper = new AudioFocusHelper(
+                    getApplicationContext(), mSampleShuffler.getVolumeListener());
             mAudioFocusHelper.requestFocus();
         }        
     }

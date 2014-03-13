@@ -21,13 +21,14 @@ import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.os.Build;
 
 // This file keeps track of AudioFocus events on API >= 8.
 // http://developer.android.com/training/managing-audio/audio-focus.html
 
 @TargetApi(Build.VERSION_CODES.FROYO)
-public class AudioFocusHelper implements AudioManager.OnAudioFocusChangeListener {
+public class AudioFocusHelper implements OnAudioFocusChangeListener {
     private final Context mContext;
     private final SampleShuffler.VolumeListener mVolumeListener;
     private final AudioManager mAudioManager;
