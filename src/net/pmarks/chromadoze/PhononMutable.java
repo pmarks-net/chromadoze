@@ -24,7 +24,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
@@ -245,21 +244,17 @@ public class PhononMutable implements Phonon {
         return c;
     }
 
-    // Returns true if any change occurred.
-    public boolean sendIfDirty(Context context) {
-        if (!mDirty) {
-            return false;
-        }
-        sendToService(context);
-        return true;
+    public boolean isDirty() {
+        return mDirty;
     }
 
+    // We assume that all Intents will be sent to the service,
+    // so this also clears the dirty bit.
     @Override
-    public void sendToService(Context context) {
-        Intent intent = new Intent(context, NoiseService.class);
-        intent.putExtra("spectrum", new SpectrumData(
-                getAllBars(), mMinVol / 100f, getPeriodSeconds()));
-        context.startService(intent);
+    public void writeIntent(Intent intent) {
+        intent.putExtra("spectrum", new SpectrumData(getAllBars()));
+        intent.putExtra("minvol", mMinVol / 100f);
+        intent.putExtra("period", getPeriodSeconds());
         cleanMe();
     }
 
@@ -285,4 +280,5 @@ public class PhononMutable implements Phonon {
                 mPeriod == o.mPeriod &&
                 Arrays.equals(mBars, o.mBars));
     }
+
 }

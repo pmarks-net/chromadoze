@@ -128,8 +128,8 @@ public class EqualizerView extends android.view.View implements UIState.LockList
             touchLine(phm, event.getHistoricalX(i), event.getHistoricalY(i));
         }
         touchLine(phm, event.getX(), event.getY());
-
-        if (phm.sendIfDirty(mUiState.getContext())) {
+        
+        if (mUiState.sendIfDirty()) {
             invalidate();
         }
         return true;

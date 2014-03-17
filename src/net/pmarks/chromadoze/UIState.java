@@ -21,6 +21,7 @@ import java.util.ArrayList;
 
 import junit.framework.Assert;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 public class UIState {
@@ -39,8 +40,16 @@ public class UIState {
         mContext = context;
     }
 
+    private boolean mDirty = false;
+    private boolean mIgnoreAudioFocus;
+    private boolean mVolumeLimitEnabled;
+    private int mVolumeLimit;
+    public static int MAX_VOLUME = 100;
+
     public void saveState(SharedPreferences.Editor pref) {
         pref.putBoolean("locked", mLocked);
+        pref.putBoolean("ignoreAudioFocus", mIgnoreAudioFocus);
+        pref.putInt("volumeLimit", getVolumeLimit());
         pref.putString("phononS", mScratchPhonon.toJSON());
         for (int i = 0 ; i < mSavedPhonons.size(); i++) {
             pref.putString("phonon" + i, mSavedPhonons.get(i).toJSON());
@@ -51,6 +60,9 @@ public class UIState {
 
     public void loadState(SharedPreferences pref) {
         mLocked = pref.getBoolean("locked", false);
+        setIgnoreAudioFocus(pref.getBoolean("ignoreAudioFocus", false));
+        setVolumeLimit(pref.getInt("volumeLimit", MAX_VOLUME));
+        setVolumeLimitEnabled(mVolumeLimit != MAX_VOLUME);
 
         // Load the scratch phonon.
         mScratchPhonon = new PhononMutable();
@@ -92,14 +104,26 @@ public class UIState {
         }
     }
 
-    public void startSending() {
-        getPhonon().sendToService(mContext);
+    public void sendToService() {
+        Intent intent = new Intent(mContext, NoiseService.class);
+        getPhonon().writeIntent(intent);
+        intent.putExtra("volumeLimit", (float)getVolumeLimit() / MAX_VOLUME);
+        intent.putExtra("ignoreAudioFocus", mIgnoreAudioFocus);
+        mContext.startService(intent);
+        mDirty = false;
+    }
+    
+    public boolean sendIfDirty() {
+        if (mDirty || (mActivePos.getPos() == -1 && mScratchPhonon.isDirty())) {
+            sendToService();
+            return true;
+        }
+        return false;
     }
 
-    public void stopSending() {
+    public void stopService() {
         NoiseService.sendStopIntent(mContext);
     }
-
 
     public void toggleLocked() {
         mLocked = !mLocked;
@@ -150,13 +174,58 @@ public class UIState {
             throw new ArrayIndexOutOfBoundsException();
         }
         mActivePos.setPos(index);
-        getPhonon().sendToService(mContext);
+        sendToService();
     }
 
-     // This interface is for receiving a callback when the state
-     // of the Input Lock has changed.
-     public interface LockListener {
-         enum LockEvent { TOGGLE, BUSY };
-         void onLockStateChange(LockEvent e);
-     }
+    // This interface is for receiving a callback when the state
+    // of the Input Lock has changed.
+    public interface LockListener {
+        enum LockEvent { TOGGLE, BUSY };
+        void onLockStateChange(LockEvent e);
+    }
+    
+    public void setIgnoreAudioFocus(boolean enabled) {
+        if (mIgnoreAudioFocus == enabled) {
+            return;
+        }
+        mIgnoreAudioFocus = enabled;
+        mDirty = true;
+    }
+    
+    public boolean getIgnoreAudioFocus() {
+        return mIgnoreAudioFocus;
+    }
+
+    public void setVolumeLimitEnabled(boolean enabled) {
+        if (mVolumeLimitEnabled == enabled) {
+            return;
+        }
+        mVolumeLimitEnabled = enabled;
+        if (mVolumeLimit != MAX_VOLUME) {
+            mDirty = true;
+        }
+    }
+
+    public void setVolumeLimit(int limit) {
+        if (limit < 0) {
+            limit = 0;
+        } else if (limit > MAX_VOLUME) {
+            limit = MAX_VOLUME;
+        }
+        if (mVolumeLimit == limit) {
+            return;
+        }
+        mVolumeLimit = limit;
+        if (mVolumeLimitEnabled) {
+            mDirty = true;
+        }
+    }
+
+    public boolean getVolumeLimitEnabled() {
+        return mVolumeLimitEnabled;
+    }
+
+    public int getVolumeLimit() {
+        return mVolumeLimitEnabled ? mVolumeLimit : MAX_VOLUME;
+    }
 }

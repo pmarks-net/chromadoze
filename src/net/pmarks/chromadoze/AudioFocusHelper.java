@@ -33,6 +33,7 @@ public class AudioFocusHelper implements OnAudioFocusChangeListener {
     private final SampleShuffler.VolumeListener mVolumeListener;
     private final AudioManager mAudioManager;
     private final ComponentName mRemoteControlReceiver;
+    private boolean mActive = false;
 
     public AudioFocusHelper(Context ctx, SampleShuffler.VolumeListener volumeListener) {
         mContext = ctx;
@@ -40,14 +41,26 @@ public class AudioFocusHelper implements OnAudioFocusChangeListener {
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         mRemoteControlReceiver = new ComponentName(mContext, MediaButtonReceiver.class);
     }
+    
+    public void setActive(boolean active) {
+        if (mActive == active) {
+            return;
+        }
+        if (active) {
+            requestFocus();
+        } else {
+            abandonFocus();
+        }
+        mActive = active;
+    }
 
-    public void requestFocus() {
+    private void requestFocus() {
         mAudioManager.registerMediaButtonEventReceiver(mRemoteControlReceiver);
         // I'm too lazy to check the return value.
         mAudioManager.requestAudioFocus(this, AudioParams.STREAM_TYPE, AudioManager.AUDIOFOCUS_GAIN);
     }
 
-    public void abandonFocus() {
+    private void abandonFocus() {
         mAudioManager.unregisterMediaButtonEventReceiver(mRemoteControlReceiver);
         mAudioManager.abandonAudioFocus(this);
     }
@@ -61,15 +74,15 @@ public class AudioFocusHelper implements OnAudioFocusChangeListener {
             break;
         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
             // For example, an alarm or phone call.
-            mVolumeListener.setVolume(SampleShuffler.VolumeListener.VolumeLevel.SILENT);
+            mVolumeListener.setDuckLevel(SampleShuffler.VolumeListener.DuckLevel.SILENT);
             break;
         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
             // For example, an email notification.
-            mVolumeListener.setVolume(SampleShuffler.VolumeListener.VolumeLevel.DUCK);
+            mVolumeListener.setDuckLevel(SampleShuffler.VolumeListener.DuckLevel.DUCK);
             break;
         case AudioManager.AUDIOFOCUS_GAIN:
             // Resume the default volume level.
-            mVolumeListener.setVolume(SampleShuffler.VolumeListener.VolumeLevel.NORMAL);
+            mVolumeListener.setDuckLevel(SampleShuffler.VolumeListener.DuckLevel.NORMAL);
             break;
         }
     }    

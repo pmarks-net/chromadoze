@@ -112,8 +112,9 @@ class SampleShuffler {
     }
     
     public interface VolumeListener {
-        public enum VolumeLevel { SILENT, DUCK, NORMAL };
-        public void setVolume(VolumeLevel v);
+        public enum DuckLevel { SILENT, DUCK, NORMAL };
+        public void setDuckLevel(DuckLevel d);
+        public void setVolumeLevel(float v);  // Range is 0..1
     }    
     public VolumeListener getVolumeListener() {
         return mPlaybackThread;
@@ -542,7 +543,8 @@ class SampleShuffler {
 
         private boolean mPreventStart = false;
         private AudioTrack mTrack;
-        private VolumeLevel mVolume = VolumeLevel.NORMAL;
+        private DuckLevel mDuckLevel = DuckLevel.NORMAL;
+        private float mVolumeLevel = 1f;
 
         private synchronized boolean startPlaying() {
             if (mPreventStart || mTrack != null) {
@@ -574,28 +576,41 @@ class SampleShuffler {
         }
         
         // Manage "Audio Focus" by changing the volume level.
-        public synchronized void setVolume(VolumeLevel v) {
-            mVolume = v;
+        public synchronized void setDuckLevel(DuckLevel d) {
+            mDuckLevel = d;
+            if (mTrack != null) {
+                setVolumeInternal();
+            }
+        }
+        
+        public synchronized void setVolumeLevel(float v) {
+            if (v < 0f || v > 1f) {
+                throw new IllegalArgumentException("Invalid volume: " + v);
+            }
+            mVolumeLevel = v;
             if (mTrack != null) {
                 setVolumeInternal();
             }
         }
         
         private void setVolumeInternal() {
-            float fv;
-            switch (mVolume) {
+            float v;
+            switch (mDuckLevel) {
             case SILENT:
-                fv = AudioTrack.getMinVolume();
+                v = 0f;
                 break;
             case DUCK:
-                fv = AudioTrack.getMinVolume() +
-                    (AudioTrack.getMaxVolume() - AudioTrack.getMinVolume()) * 0.1f;
+                v = mVolumeLevel * 0.1f;
+                break;
+            case NORMAL:
+                v = mVolumeLevel;
                 break;
             default:
-                fv = AudioTrack.getMaxVolume();
-                break;
+                throw new IllegalArgumentException("Invalid DuckLevel: " + mDuckLevel);
             }
-            mTrack.setStereoVolume(fv, fv);
+            v = AudioTrack.getMinVolume() +
+                    (AudioTrack.getMaxVolume() - AudioTrack.getMinVolume()) * v;
+            mTrack.setStereoVolume(v, v);
         }
 
         @Override
