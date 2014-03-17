@@ -21,7 +21,7 @@ import android.content.Context;
 
 public class FragmentIndex {
     static final int ID_CHROMA_DOZE = 0;
-    static final int ID_AMP_WAVE = 1;
+    static final int ID_OPTIONS = 1;
     static final int ID_MEMORY = 2;
     static final int ID_ABOUT = 3;
     static final int ID_COUNT = 4;
@@ -29,7 +29,7 @@ public class FragmentIndex {
     static String[] getStrings(Context context) {
         String[] out = new String[ID_COUNT];
         out[ID_CHROMA_DOZE] = context.getString(R.string.app_name);
-        out[ID_AMP_WAVE] = context.getString(R.string.amp_wave);
+        out[ID_OPTIONS] = context.getString(R.string.options);
         out[ID_MEMORY] = context.getString(R.string.memory);
         out[ID_ABOUT] = context.getString(R.string.about_menu);
         return out;

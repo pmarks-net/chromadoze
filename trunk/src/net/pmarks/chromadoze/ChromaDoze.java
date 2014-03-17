@@ -87,7 +87,7 @@ public class ChromaDoze extends ActionBarActivity implements
         // If the equalizer is silent, stop the service.
         // This makes it harder to leave running accidentally.
         if (mServiceActive && mUiState.getPhonon().isSilent()) {
-            mUiState.stopSending();
+            mUiState.stopService();
         }
 
         SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
@@ -161,9 +161,9 @@ public class ChromaDoze extends ActionBarActivity implements
         case MENU_PLAY_STOP:
             // Force the service into its expected state.
             if (!mServiceActive) {
-                mUiState.startSending();
+                mUiState.sendToService();
             } else {
-                mUiState.stopSending();
+                mUiState.stopService();
             }
             return true;
         case MENU_LOCK:
@@ -241,8 +241,8 @@ public class ChromaDoze extends ActionBarActivity implements
         case FragmentIndex.ID_CHROMA_DOZE:
             onSupportNavigateUp();
             return true;
-        case FragmentIndex.ID_AMP_WAVE:
-            changeFragment(new WaveFragment(), true);
+        case FragmentIndex.ID_OPTIONS:
+            changeFragment(new OptionsFragment(), true);
             return true;
         case FragmentIndex.ID_MEMORY:
             changeFragment(new MemoryFragment(), true);

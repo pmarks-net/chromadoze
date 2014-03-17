@@ -17,7 +17,7 @@
 
 package net.pmarks.chromadoze;
 
-import android.content.Context;
+import android.content.Intent;
 
 // Read-only view of a PhononMutable
 public interface Phonon {
@@ -29,6 +29,6 @@ public interface Phonon {
     public int getPeriod();
     public String getPeriodText();
     public PhononMutable makeMutableCopy();
-    public void sendToService(Context context);
+    public void writeIntent(Intent intent);
     public boolean fastEquals(Phonon other);
 }

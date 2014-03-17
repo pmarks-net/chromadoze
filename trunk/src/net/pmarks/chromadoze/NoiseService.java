@@ -75,7 +75,6 @@ public class NoiseService extends Service {
             // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
             mAudioFocusHelper = new AudioFocusHelper(
                     getApplicationContext(), mSampleShuffler.getVolumeListener());
-            mAudioFocusHelper.requestFocus();
         }        
     }
 
@@ -90,8 +89,16 @@ public class NoiseService extends Service {
         SpectrumData spectrum = intent.getParcelableExtra("spectrum");
 
         // Synchronous updates.
-        mSampleShuffler.setAmpWave(spectrum.getMinVol(), spectrum.getPeriod());
-
+        mSampleShuffler.setAmpWave(
+                intent.getFloatExtra("minvol", -1),
+                intent.getFloatExtra("period", -1));
+        mSampleShuffler.getVolumeListener().setVolumeLevel(
+                intent.getFloatExtra("volumeLimit", -1));
+        if (mAudioFocusHelper != null) {
+            mAudioFocusHelper.setActive(
+                    !intent.getBooleanExtra("ignoreAudioFocus", false));
+        }
+                
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
         
@@ -113,8 +120,7 @@ public class NoiseService extends Service {
         updatePercent(-1);
         
         if (mAudioFocusHelper != null) {
-            mAudioFocusHelper.abandonFocus();
-            mAudioFocusHelper = null;
+            mAudioFocusHelper.setActive(false);
         }
 
         stopForeground(true);

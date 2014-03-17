@@ -47,8 +47,6 @@ public class SpectrumData implements Parcelable {
     public static final int EDGE_FREQS[] = calculateEdgeFreqs();
 
     private final float[] mData;
-    private final float mMinVol;
-    private final float mPeriod;
 
     private static int[] calculateEdgeFreqs() {
         int[] edgeFreqs = new int[BAND_COUNT + 1];
@@ -59,7 +57,7 @@ public class SpectrumData implements Parcelable {
         return edgeFreqs;
     }
 
-    public SpectrumData(float[] donateBars, float minVol, float period) {
+    public SpectrumData(float[] donateBars) {
         if (donateBars.length != BAND_COUNT) {
             throw new RuntimeException("Incorrect number of bands");
         }
@@ -71,15 +69,11 @@ public class SpectrumData implements Parcelable {
                 mData[i] = 0.001f * (float)Math.pow(1000, mData[i]);
             }
         }
-        mMinVol = minVol;
-        mPeriod = period;
     }
 
     private SpectrumData(Parcel in) {
         mData = new float[BAND_COUNT];
         in.readFloatArray(mData);
-        mMinVol = in.readFloat();
-        mPeriod = in.readFloat();
     }
 
     @Override
@@ -90,8 +84,6 @@ public class SpectrumData implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeFloatArray(mData);
-        dest.writeFloat(mMinVol);
-        dest.writeFloat(mPeriod);
     }
 
     public void fill(float[] out, int sampleRate) {
@@ -109,14 +101,6 @@ public class SpectrumData implements Parcelable {
         for (int i = startFreq * out.length / maxFreq; i < limitIndex; i++) {
             out[i] = setValue;
         }
-    }
-
-    public float getMinVol() {
-        return mMinVol;
-    }
-
-    public float getPeriod() {
-        return mPeriod;
     }
 
     public boolean sameSpectrum(SpectrumData other) {
