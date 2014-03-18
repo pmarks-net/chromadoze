@@ -55,6 +55,8 @@ public class AudioFocusHelper implements OnAudioFocusChangeListener {
     }
 
     private void requestFocus() {
+        // In theory, the media buttons could be controlled independently, but
+        // this is convenient because they both require API 8.
         mAudioManager.registerMediaButtonEventReceiver(mRemoteControlReceiver);
         // I'm too lazy to check the return value.
         mAudioManager.requestAudioFocus(this, AudioParams.STREAM_TYPE, AudioManager.AUDIOFOCUS_GAIN);
