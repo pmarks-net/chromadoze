@@ -17,12 +17,21 @@
 
 package net.pmarks.chromadoze;
 
+import junit.framework.Assert;
 import android.annotation.TargetApi;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -30,12 +39,13 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBar.OnNavigationListener;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 
 public class ChromaDoze extends ActionBarActivity implements
-        NoiseService.PercentListener, UIState.LockListener, OnNavigationListener {
+        UIState.LockListener, OnNavigationListener, ServiceConnection {
     private static final int MENU_PLAY_STOP = 1;
     private static final int MENU_LOCK = 2;
 
@@ -43,6 +53,8 @@ public class ChromaDoze extends ActionBarActivity implements
     private int mFragmentId = FragmentIndex.ID_CHROMA_DOZE;
 
     private boolean mServiceActive;
+    
+    private PercentHandler mPercentHandler;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -73,11 +85,23 @@ public class ChromaDoze extends ActionBarActivity implements
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        connect();
+    }
+    
+    @Override
+    protected void onStop() {
+        super.onStop();
+        disconnect();
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         // Start receiving progress events.
-        NoiseService.addPercentListener(this);
         mUiState.addLockListener(this);
+        
     }
 
     @Override
@@ -96,8 +120,8 @@ public class ChromaDoze extends ActionBarActivity implements
         pref.commit();
 
         // Stop receiving progress events.
-        NoiseService.removePercentListener(this);
         mUiState.removeLockListener(this);
+        
     }
 
     @Override
@@ -174,7 +198,7 @@ public class ChromaDoze extends ActionBarActivity implements
         return false;
     }
 
-    @Override
+    /*@Override*/
     public void onNoiseServicePercentChange(int percent) {
         boolean newServiceActive = (percent >= 0);
         if (mServiceActive != newServiceActive) {
@@ -252,5 +276,68 @@ public class ChromaDoze extends ActionBarActivity implements
             return true;
         }
         return false;
+    }
+    
+    private /*static*/ class PercentHandler extends Handler {
+        
+        private boolean poisoned = false;
+        
+        public void poison() {
+            poisoned = true;
+            onNoiseServicePercentChange(-1);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Assert.assertEquals(NoiseService.PERCENT_MSG, msg.what);
+            Log.e("ChromaDoze", "PERCENT_MSG: " + msg.arg1 + " poisoned? " + poisoned);
+            if (poisoned) {
+                return;
+            }
+            
+            // XXX it might not always be safe to call this.
+            onNoiseServicePercentChange(msg.arg1);
+        }
+        
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+        Log.e("ChromaDoze", "onServiceConnected! " + name);
+        
+        if (mPercentHandler != null) {
+            throw new IllegalStateException();
+        }
+        mPercentHandler = new PercentHandler();
+        
+        Message connect = Message.obtain(null, NoiseService.CONNECT_MSG);
+        connect.replyTo = new Messenger(mPercentHandler);
+        try {
+            (new Messenger(service)).send(connect);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }        
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+        Log.e("ChromaDoze", "onServiceDisconnected!");
+        disconnect();
+        connect();
+    }
+
+    private void connect() {
+        Intent intent = new Intent(getApplication(), NoiseService.class);
+        bindService(intent, this, BIND_DEBUG_UNBIND);
+        Log.e("ChromaDoze", "bindService done");
+
+    }
+
+    private void disconnect() {
+        mPercentHandler.poison();
+        mPercentHandler = null;
+
+        unbindService(this);
+        Log.e("ChromaDoze", "unbindService done");
     }
 }
