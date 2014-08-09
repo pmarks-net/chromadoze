@@ -18,6 +18,8 @@
 package net.pmarks.chromadoze;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import junit.framework.Assert;
 import android.app.Notification;
@@ -25,21 +27,21 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Messenger;
 import android.os.PowerManager;
+import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 public class NoiseService extends Service {
     public static final int PERCENT_MSG = 1;
-
-    // These must be accessed only from the main thread.
-    private static int sLastPercent = -1;
-    private static final ArrayList<PercentListener> sPercentListeners =
-            new ArrayList<PercentListener>();
+    public static final int CONNECT_MSG = 2;
 
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
@@ -47,21 +49,53 @@ public class NoiseService extends Service {
 
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
+    
+    private ClientHandler mClientHandler;
 
-    private Handler mPercentHandler;
-
-    private static class PercentHandler extends Handler {
+    private static class ClientHandler extends Handler {
+        private final ArrayList<Messenger> mClients;
+        private int mLastPercent = -1;
+        
+        public ClientHandler() {
+            mClients = new ArrayList<Messenger>();
+        }
+        
+        // If connected, notify the main activity of our progress.
+        public void updatePercent(int percent) {
+            notifyClients(null, percent);
+        }
+        
         @Override
         public void handleMessage(Message msg) {
-            Assert.assertEquals(PERCENT_MSG, msg.what);
-            updatePercent(msg.arg1);
+            Assert.assertEquals(CONNECT_MSG, msg.what);
+            Log.e("NoiseService", "Got a connect message!");
+            notifyClients(msg.replyTo, null);
         }
+        
+        private synchronized void notifyClients(Messenger newClient, Integer newPercent) {
+            if (newClient != null) {
+                mClients.add(newClient);
+            }
+            if (newPercent != null) {
+                mLastPercent = newPercent.intValue();
+            }
+            for (Iterator<Messenger> it = mClients.iterator(); it.hasNext();) {
+                try {
+                    it.next().send(Message.obtain(null, PERCENT_MSG, mLastPercent, 0));
+                } catch (RemoteException e) {
+                    it.remove();
+                }
+            }
+        }
+        
     }
 
     @Override
     public void onCreate() {
         // Set up a message handler in the main thread.
-        mPercentHandler = new PercentHandler();
+        //mPercentHandler = new PercentHandler();
+        mClientHandler = new ClientHandler();
+        
         AudioParams params = new AudioParams();
         mSampleShuffler = new SampleShuffler(params);
         mSampleGenerator = new SampleGenerator(this, params, mSampleShuffler);
@@ -115,9 +149,10 @@ public class NoiseService extends Service {
     public void onDestroy() {
         mSampleGenerator.stopThread();
         mSampleShuffler.stopThread();
-
-        mPercentHandler.removeMessages(PERCENT_MSG);
-        updatePercent(-1);
+        
+        updatePercentAsync(-1);
+        mClientHandler = null;
+        // XXX Clean up mClientHandler?
         
         if (mAudioFocusHelper != null) {
             mAudioFocusHelper.setActive(false);
@@ -125,12 +160,14 @@ public class NoiseService extends Service {
 
         stopForeground(true);
         mWakeLock.release();
+        System.exit(0);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         // Don't use binding.
-        return null;
+        Log.e("NoiseService", "onBind!");
+        return new Messenger(mClientHandler).getBinder();
     }
 
     // Create an icon for the notification bar.
@@ -179,42 +216,13 @@ public class NoiseService extends Service {
         n.contentView = rv;
     }
 
-    // Call updatePercent() from any thread.
-    public void updatePercentAsync(int percent) {
-        mPercentHandler.removeMessages(PERCENT_MSG);
-        Message m = Message.obtain(mPercentHandler, PERCENT_MSG);
-        m.arg1 = percent;
-        m.sendToTarget();
-    }
 
-    // If connected, notify the main activity of our progress.
-    // This must run in the main thread.
-    private static void updatePercent(int percent) {
-        for (PercentListener listener : sPercentListeners) {
-            listener.onNoiseServicePercentChange(percent);
-        }
-        sLastPercent = percent;
-    }
-
-    // Connect the main activity so it receives progress updates.
-    // This must run in the main thread.
-    public static void addPercentListener(PercentListener listener) {
-        sPercentListeners.add(listener);
-        listener.onNoiseServicePercentChange(sLastPercent);
-    }
-
-    public static void removePercentListener(PercentListener listener) {
-        if (!sPercentListeners.remove(listener)) {
-            throw new IllegalStateException();
-        }
-    }
-
-    public interface PercentListener {
-        void onNoiseServicePercentChange(int percent);
-    }
-    
     public static void sendStopIntent(Context ctx) {
         Intent intent = new Intent(ctx, NoiseService.class);
         ctx.stopService(intent);
-    }    
+    }
+    
+    public void updatePercentAsync(int percent) {
+        mClientHandler.updatePercent(percent);
+    }
 }

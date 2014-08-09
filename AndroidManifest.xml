@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.pmarks.chromadoze"
     android:versionCode="14"
-    android:versionName="3.3" >
+    android:versionName="TEST-20140727" >
 
     <uses-sdk
         android:minSdkVersion="7"
@@ -31,6 +31,6 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".NoiseService" />
+        <service android:name=".NoiseService" android:process=":service"/>
     </application>
 </manifest>

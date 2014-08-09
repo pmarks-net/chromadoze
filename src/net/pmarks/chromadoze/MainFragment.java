@@ -25,7 +25,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class MainFragment extends Fragment implements NoiseService.PercentListener {
+public class MainFragment extends Fragment /*implements NoiseService.PercentListener*/ {
     private EqualizerView mEqualizer;
     private TextView mStateText;
     private ProgressBar mPercentBar;
@@ -53,7 +53,7 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
     public void onResume() {
         super.onResume();
         // Start receiving progress events.
-        NoiseService.addPercentListener(this);
+        /*NoiseService.addPercentListener(this);*/
         mUiState.addLockListener(mEqualizer);
 
         ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_CHROMA_DOZE);
@@ -63,11 +63,11 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
     public void onPause() {
         super.onPause();
         // Stop receiving progress events.
-        NoiseService.removePercentListener(this);
+        /*NoiseService.removePercentListener(this);*/
         mUiState.removeLockListener(mEqualizer);
     }
 
-    @Override
+    /*@Override*/
     public void onNoiseServicePercentChange(int percent) {
         int vis;
         if (percent < 0) {
