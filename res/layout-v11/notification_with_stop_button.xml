@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:divider="?android:attr/dividerVertical"
-    android:dividerPadding="8dp"
     android:orientation="horizontal"
-    android:showDividers="middle" >
+    tools:context=".NoiseService" >
 
     <FrameLayout
         android:id="@+id/notification_insert"
@@ -13,12 +12,31 @@
         android:layout_height="fill_parent"
         android:layout_weight="1" />
 
-    <ImageButton
+    <TextView
+        android:id="@+id/divider"
+        android:layout_width="1px"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:background="#FF00FF" />
+
+    <!-- Colors will be replaced at runtime. -->
+
+    <FrameLayout
         android:id="@+id/stop_button"
         style="?android:attr/borderlessButtonStyle"
         android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:contentDescription="@string/stop"
-        android:src="@drawable/av_stop" />
+        android:layout_height="match_parent"
+        android:minWidth="64dp" >
+
+        <TextView
+            android:id="@+id/stop_button_square"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="#FF00FF"
+            android:height="20dp"
+            android:width="20dp" />
+    </FrameLayout>
 
 </LinearLayout>

@@ -25,13 +25,18 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.RemoteViews;
+import android.widget.TextView;
 
 public class NoiseService extends Service {
     public static final int PERCENT_MSG = 1;
@@ -163,7 +168,7 @@ public class NoiseService extends Service {
         return n;
     }
 
-    void addButtonToNotification(Notification n) {
+    private void addButtonToNotification(Notification n) {
         // Create a new RV with a Stop button.
         RemoteViews rv = new RemoteViews(
                 getPackageName(), R.layout.notification_with_stop_button);
@@ -173,10 +178,39 @@ public class NoiseService extends Service {
                 new Intent(this, NoiseService.class).putExtra("stop", true),
                 0);
         rv.setOnClickPendingIntent(R.id.stop_button, pendingIntent);
+        
+        // Pre-render the original RV, and copy some of the colors.
+        final View inflated = n.contentView.apply(this, new FrameLayout(this));
+        final TextView titleText = findTextView(inflated, getString(R.string.app_name));
+        final TextView defaultText = findTextView(inflated, getString(R.string.notification_text));
+        rv.setInt(R.id.divider, "setBackgroundColor", defaultText.getTextColors().getDefaultColor());
+        rv.setInt(R.id.stop_button_square, "setBackgroundColor", titleText.getTextColors().getDefaultColor());
+        
+        // Insert a copy of the original RV into the new one.
+        rv.addView(R.id.notification_insert, n.contentView.clone());
 
-        // Insert the original RV into the new one.
-        rv.addView(R.id.notification_insert, n.contentView);
-        n.contentView = rv;
+        // Splice everything back into the original's root view.
+        int id = Resources.getSystem().getIdentifier("status_bar_latest_event_content", "id", "android");
+        n.contentView.removeAllViews(id);
+        n.contentView.addView(id, rv);
+    }
+    
+    private static TextView findTextView(View view, String title) {
+        if (view instanceof TextView) {
+            TextView text = (TextView) view;
+            if (text.getText().equals(title)) {
+                return text;
+            }
+        } else if (view instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) view;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                TextView found = findTextView(vg.getChildAt(i), title);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     // Call updatePercent() from any thread.
