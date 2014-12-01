@@ -19,6 +19,7 @@ package net.pmarks.chromadoze;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.SwitchCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,8 +36,8 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
     private TextView mMinVolText;
     private SeekBar mPeriodSeek;
     private TextView mPeriodText;
-    private CheckBox mIgnoreAudioFocusCheck;
-    private CheckBox mVolumeLimitCheck;
+    private SwitchCompat mIgnoreAudioFocusCheck;
+    private SwitchCompat mVolumeLimitCheck;
     private SeekBar mVolumeLimitSeek;
 
     @Override
@@ -49,13 +50,13 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
         mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
         mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
 
-        mIgnoreAudioFocusCheck = (CheckBox) v.findViewById(R.id.IgnoreAudioFocusCheck);
+        mIgnoreAudioFocusCheck = (SwitchCompat) v.findViewById(R.id.IgnoreAudioFocusCheck);
         // The AudioFocus API was added in Froyo.
         if (android.os.Build.VERSION.SDK_INT < 8) {
-            v.findViewById(R.id.IgnoreAudioFocusContainer).setVisibility(View.GONE);
+            mIgnoreAudioFocusCheck.setVisibility(View.GONE);
         }
         
-        mVolumeLimitCheck = (CheckBox) v.findViewById(R.id.VolumeLimitCheck);
+        mVolumeLimitCheck = (SwitchCompat) v.findViewById(R.id.VolumeLimitCheck);
         mVolumeLimitSeek = (SeekBar) v.findViewById(R.id.VolumeLimitSeek);
         
         return v;

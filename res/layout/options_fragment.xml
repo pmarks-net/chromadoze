@@ -108,62 +108,21 @@
             android:text="Advanced Options"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
-        <RelativeLayout
-            android:id="@+id/IgnoreAudioFocusContainer"
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/IgnoreAudioFocusCheck"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:paddingTop="8dp"
+            android:text="Ignore Audio Focus\n(Keep playing over other apps)" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:orientation="vertical" >
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ignore Audio Focus"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Keep playing over other apps"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
-            </LinearLayout>
-
-            <CheckBox
-                android:id="@+id/IgnoreAudioFocusCheck"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:button="@null"
-                android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                android:paddingBottom="8dp"
-                android:paddingTop="8dp" />
-        </RelativeLayout>
-
-        <RelativeLayout
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/VolumeLimitCheck"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:text="Reduce Volume"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            <CheckBox
-                android:id="@+id/VolumeLimitCheck"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:button="@null"
-                android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                android:paddingBottom="4dp"
-                android:paddingTop="8dp" />
-        </RelativeLayout>
+            android:layout_height="wrap_content"
+            android:paddingBottom="4dp"
+            android:paddingTop="8dp"
+            android:text="Reduce Volume" />
 
         <SeekBar
             android:id="@+id/VolumeLimitSeek"
