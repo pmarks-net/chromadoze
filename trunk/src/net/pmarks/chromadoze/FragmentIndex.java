@@ -28,10 +28,14 @@ public class FragmentIndex {
 
     static String[] getStrings(Context context) {
         String[] out = new String[ID_COUNT];
-        out[ID_CHROMA_DOZE] = context.getString(R.string.app_name);
-        out[ID_OPTIONS] = context.getString(R.string.options);
-        out[ID_MEMORY] = context.getString(R.string.memory);
-        out[ID_ABOUT] = context.getString(R.string.about_menu);
+        out[ID_CHROMA_DOZE] = getPaddedString(context, R.string.app_name);
+        out[ID_OPTIONS] = getPaddedString(context, R.string.options);
+        out[ID_MEMORY] = getPaddedString(context, R.string.memory);
+        out[ID_ABOUT] = getPaddedString(context, R.string.about_menu);
         return out;
+    }
+    
+    private static String getPaddedString(Context context, int resId) {
+        return context.getString(resId) + "  ";        
     }
 }

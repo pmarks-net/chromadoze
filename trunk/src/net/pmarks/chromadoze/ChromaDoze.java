@@ -17,33 +17,46 @@
 
 package net.pmarks.chromadoze;
 
-import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.PorterDuff.Mode;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBar.OnNavigationListener;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.PopupMenu;
+import android.support.v7.widget.Toolbar;
+import android.util.TypedValue;
+import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
+import android.widget.Spinner;
 
 public class ChromaDoze extends ActionBarActivity implements
-        NoiseService.PercentListener, UIState.LockListener, OnNavigationListener {
+        NoiseService.PercentListener, UIState.LockListener, OnItemSelectedListener {
     private static final int MENU_PLAY_STOP = 1;
     private static final int MENU_LOCK = 2;
 
     private UIState mUiState;
     private int mFragmentId = FragmentIndex.ID_CHROMA_DOZE;
+    
+    private Drawable mToolbarIcon;
+    private Spinner mNavSpinner;
 
     private boolean mServiceActive;
-
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,22 +67,35 @@ public class ChromaDoze extends ActionBarActivity implements
         SharedPreferences pref = getPreferences(MODE_PRIVATE);
         mUiState.loadState(pref);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setTitle("");
+        
+        mNavSpinner = (Spinner) findViewById(R.id.nav_spinner);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                actionBar.getThemedContext(), R.layout.spinner_title,
+                FragmentIndex.getStrings(this));
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown);
+        mNavSpinner.setAdapter(adapter);
+        mNavSpinner.setOnItemSelectedListener(this);
+        
+        
+        // Created a scaled-down icon for the Toolbar.
+        {
+            TypedValue tv = new TypedValue();
+            getTheme().resolveAttribute(R.attr.actionBarSize, tv, true);
+            int height = TypedValue.complexToDimensionPixelSize(tv.data,getResources().getDisplayMetrics());
+            mToolbarIcon = getScaledImage(R.drawable.chromadoze_icon, height * 2 / 3);
+        }
+            
         // When this Activity is first created, set up the initial fragment.
         // After a save/restore, the framework will drop in the last-used
         // fragment automatically.
         if (savedInstanceState == null) {
             changeFragment(new MainFragment(), false);
         }
-
-        final ActionBar actionBar = getSupportActionBar();
-        actionBar.setDisplayShowTitleEnabled(false);
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                actionBar.getThemedContext(), R.layout.title_text,
-                FragmentIndex.getStrings(this));
-        adapter.setDropDownViewResource(android.R.layout.simple_list_item_1);
-        actionBar.setListNavigationCallbacks(adapter, this);
     }
 
     @Override
@@ -214,43 +240,73 @@ public class ChromaDoze extends ActionBarActivity implements
 
         final boolean enableUp = id != FragmentIndex.ID_CHROMA_DOZE;
         ActionBar actionBar = getSupportActionBar();
-        actionBar.setHomeButtonEnabled(enableUp);
-        actionBar.setDisplayHomeAsUpEnabled(enableUp);
-        setHomeButtonEnabledCompat(enableUp);
         supportInvalidateOptionsMenu();
+        
+        if (enableUp) {
+            // Restore the default left-arrow icon.
+            actionBar.setDisplayHomeAsUpEnabled(false);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        } else {
+            // Use a scaled-down Chroma Doze icon.
+            actionBar.setHomeAsUpIndicator(mToolbarIcon);
+        }
 
-        getSupportActionBar().setSelectedNavigationItem(id);
+        // When we're on the main page, make the icon non-clickable.
+        ImageButton navUp = findImageButton(findViewById(R.id.toolbar));
+        if (navUp != null) {
+            navUp.setClickable(enableUp);
+        }
+        
+        mNavSpinner.setSelection(id);
+    }
+    
+    // Search a View for the first ImageButton.  We use it to locate the
+    // home/up button in a Toolbar.
+    private static ImageButton findImageButton(View view) {
+        if (view instanceof ImageButton) {
+            return (ImageButton) view;
+        } else if (view instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) view;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                ImageButton found = findImageButton(vg.getChildAt(i));
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
-    // HACK: Prevent the icon from remaining clickable after returning to
-    // the main fragment. Is there a bug in the support library?
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    void setHomeButtonEnabledCompat(boolean enabled) {
-        getSupportActionBar().setHomeButtonEnabled(enabled);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            getActionBar().setHomeButtonEnabled(enabled);
+    // Handle nav_spinner selection.
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position,
+            long id) {
+        if (position == mFragmentId) {
+            return;
+        }
+        switch (position) {
+        case FragmentIndex.ID_CHROMA_DOZE:
+            onSupportNavigateUp();
+            return;
+        case FragmentIndex.ID_OPTIONS:
+            changeFragment(new OptionsFragment(), true);
+            return;
+        case FragmentIndex.ID_MEMORY:
+            changeFragment(new MemoryFragment(), true);
+            return;
+        case FragmentIndex.ID_ABOUT:
+            changeFragment(new AboutFragment(), true);
+            return;
         }
     }
 
     @Override
-    public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-        if (itemPosition == mFragmentId) {
-            return false;
-        }
-        switch (itemPosition) {
-        case FragmentIndex.ID_CHROMA_DOZE:
-            onSupportNavigateUp();
-            return true;
-        case FragmentIndex.ID_OPTIONS:
-            changeFragment(new OptionsFragment(), true);
-            return true;
-        case FragmentIndex.ID_MEMORY:
-            changeFragment(new MemoryFragment(), true);
-            return true;
-        case FragmentIndex.ID_ABOUT:
-            changeFragment(new AboutFragment(), true);
-            return true;
-        }
-        return false;
+    public void onNothingSelected(AdapterView<?> parent) {
+    }
+    
+    private Drawable getScaledImage(int resource, int size) {
+        Bitmap b = ((BitmapDrawable)getResources().getDrawable(resource)).getBitmap();
+        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, size, size, true);
+        return new BitmapDrawable(getResources(), bitmapResized);
     }
 }
