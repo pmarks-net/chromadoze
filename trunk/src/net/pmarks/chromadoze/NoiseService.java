@@ -158,6 +158,7 @@ public class NoiseService extends Service {
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.notification_text))
                 .setContentIntent(contentIntent)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .build();
 
         // Add a Stop button to the Notification bar.  Not trying to support
