@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.ChromaDozeTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/dark_purple</item>
+        <item name="colorPrimaryDark">@color/black</item>
+        <item name="colorAccent">@color/holo_blue_light</item>
+        <item name="android:textColorLink">@color/holo_blue_light</item>
+    </style>
+
+</resources>

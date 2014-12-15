@@ -14,7 +14,7 @@
         android:allowBackup="true"
         android:icon="@drawable/chromadoze_icon"
         android:label="@string/app_name"
-        android:theme="@style/Theme.AppCompat.NoActionBar" >
+        android:theme="@style/Theme.ChromaDozeTheme" >
         <activity
             android:name=".ChromaDoze"
             android:label="@string/app_name"

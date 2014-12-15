@@ -120,7 +120,7 @@
             android:id="@+id/VolumeLimitCheck"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="4dp"
+            android:paddingBottom="8dp"
             android:paddingTop="8dp"
             android:text="Reduce Volume" />
 
