@@ -23,7 +23,6 @@ import android.support.v7.widget.SwitchCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.SeekBar;
@@ -36,6 +35,7 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
     private TextView mMinVolText;
     private SeekBar mPeriodSeek;
     private TextView mPeriodText;
+    private SwitchCompat mAutoPlayCheck;
     private SwitchCompat mIgnoreAudioFocusCheck;
     private SwitchCompat mVolumeLimitCheck;
     private SeekBar mVolumeLimitSeek;
@@ -49,6 +49,8 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
         mMinVolText = (TextView) v.findViewById(R.id.MinVolText);
         mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
         mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
+        
+        mAutoPlayCheck = (SwitchCompat) v.findViewById(R.id.AutoPlayCheck);
 
         mIgnoreAudioFocusCheck = (SwitchCompat) v.findViewById(R.id.IgnoreAudioFocusCheck);
         // The AudioFocus API was added in Froyo.
@@ -78,6 +80,9 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
         mPeriodSeek.setEnabled(ph.getMinVol() != 100);
         mPeriodSeek.setMax(PhononMutable.PERIOD_MAX);
         mPeriodSeek.setOnSeekBarChangeListener(this);
+
+        mAutoPlayCheck.setChecked(mUiState.getAutoPlay());
+        mAutoPlayCheck.setOnCheckedChangeListener(this);
         
         mIgnoreAudioFocusCheck.setChecked(mUiState.getIgnoreAudioFocus());
         mIgnoreAudioFocusCheck.setOnCheckedChangeListener(this);
@@ -119,7 +124,9 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
     
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        if (buttonView == mIgnoreAudioFocusCheck) {
+        if (buttonView == mAutoPlayCheck) {
+            mUiState.setAutoPlay(isChecked, true);
+        } else if (buttonView == mIgnoreAudioFocusCheck) {
             mUiState.setIgnoreAudioFocus(isChecked);
         } else if (buttonView == mVolumeLimitCheck) {
             mUiState.setVolumeLimitEnabled(isChecked);
