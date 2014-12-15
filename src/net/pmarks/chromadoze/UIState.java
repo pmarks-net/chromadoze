@@ -41,6 +41,7 @@ public class UIState {
     }
 
     private boolean mDirty = false;
+    private boolean mAutoPlay;
     private boolean mIgnoreAudioFocus;
     private boolean mVolumeLimitEnabled;
     private int mVolumeLimit;
@@ -48,6 +49,7 @@ public class UIState {
 
     public void saveState(SharedPreferences.Editor pref) {
         pref.putBoolean("locked", mLocked);
+        pref.putBoolean("autoPlay", mAutoPlay);
         pref.putBoolean("ignoreAudioFocus", mIgnoreAudioFocus);
         pref.putInt("volumeLimit", getVolumeLimit());
         pref.putString("phononS", mScratchPhonon.toJSON());
@@ -60,6 +62,7 @@ public class UIState {
 
     public void loadState(SharedPreferences pref) {
         mLocked = pref.getBoolean("locked", false);
+        setAutoPlay(pref.getBoolean("autoPlay", false), false);
         setIgnoreAudioFocus(pref.getBoolean("ignoreAudioFocus", false));
         setVolumeLimit(pref.getInt("volumeLimit", MAX_VOLUME));
         setVolumeLimitEnabled(mVolumeLimit != MAX_VOLUME);
@@ -182,6 +185,22 @@ public class UIState {
     public interface LockListener {
         enum LockEvent { TOGGLE, BUSY };
         void onLockStateChange(LockEvent e);
+    }
+
+    public void setAutoPlay(boolean enabled, boolean fromUser) {
+        mAutoPlay = enabled;
+        if (fromUser) {
+            // Demonstrate AutoPlay by acting like the Play/Stop button.
+            if (enabled) {
+                sendToService();
+            } else {
+                stopService();
+            }
+        }
+    }
+    
+    public boolean getAutoPlay() {
+        return mAutoPlay;
     }
     
     public void setIgnoreAudioFocus(boolean enabled) {

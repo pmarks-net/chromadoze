@@ -17,7 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.PorterDuff.Mode;
@@ -30,10 +29,8 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
-import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -104,6 +101,10 @@ public class ChromaDoze extends ActionBarActivity implements
         // Start receiving progress events.
         NoiseService.addPercentListener(this);
         mUiState.addLockListener(this);
+        
+        if (mUiState.getAutoPlay()) {
+            mUiState.sendToService();
+        }
     }
 
     @Override

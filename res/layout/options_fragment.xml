@@ -109,6 +109,14 @@
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <android.support.v7.widget.SwitchCompat
+            android:id="@+id/AutoPlayCheck"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:paddingTop="8dp"
+            android:text="Play Automatically on Open" />
+        
+        <android.support.v7.widget.SwitchCompat
             android:id="@+id/IgnoreAudioFocusCheck"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
