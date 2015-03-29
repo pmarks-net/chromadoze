@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "net.pmarks.chromadoze"
-        minSdkVersion 7
+        minSdkVersion 8
         targetSdkVersion 22
     }
 

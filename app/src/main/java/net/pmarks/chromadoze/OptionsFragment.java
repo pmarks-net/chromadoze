@@ -53,11 +53,6 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
         mAutoPlayCheck = (SwitchCompat) v.findViewById(R.id.AutoPlayCheck);
 
         mIgnoreAudioFocusCheck = (SwitchCompat) v.findViewById(R.id.IgnoreAudioFocusCheck);
-        // The AudioFocus API was added in Froyo.
-        if (android.os.Build.VERSION.SDK_INT < 8) {
-            mIgnoreAudioFocusCheck.setVisibility(View.GONE);
-        }
-        
         mVolumeLimitCheck = (SwitchCompat) v.findViewById(R.id.VolumeLimitCheck);
         mVolumeLimitSeek = (SeekBar) v.findViewById(R.id.VolumeLimitSeek);
         

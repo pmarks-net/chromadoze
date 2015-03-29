@@ -47,7 +47,7 @@ public class NoiseService extends Service {
 
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
-    private AudioFocusHelper mAudioFocusHelper = null;
+    private AudioFocusHelper mAudioFocusHelper;
 
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
@@ -75,11 +75,9 @@ public class NoiseService extends Service {
 
         startForeground(NOTIFY_ID, makeNotify());
         
-        if (android.os.Build.VERSION.SDK_INT >= 8) {
-            // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
-            mAudioFocusHelper = new AudioFocusHelper(
-                    getApplicationContext(), mSampleShuffler.getVolumeListener());
-        }        
+        // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
+        mAudioFocusHelper = new AudioFocusHelper(
+                getApplicationContext(), mSampleShuffler.getVolumeListener());
     }
 
     @Override
@@ -98,11 +96,9 @@ public class NoiseService extends Service {
                 intent.getFloatExtra("period", -1));
         mSampleShuffler.getVolumeListener().setVolumeLevel(
                 intent.getFloatExtra("volumeLimit", -1));
-        if (mAudioFocusHelper != null) {
-            mAudioFocusHelper.setActive(
-                    !intent.getBooleanExtra("ignoreAudioFocus", false));
-        }
-                
+        mAudioFocusHelper.setActive(
+                !intent.getBooleanExtra("ignoreAudioFocus", false));
+
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
         
@@ -122,11 +118,7 @@ public class NoiseService extends Service {
 
         mPercentHandler.removeMessages(PERCENT_MSG);
         updatePercent(-1);
-        
-        if (mAudioFocusHelper != null) {
-            mAudioFocusHelper.setActive(false);
-        }
-
+        mAudioFocusHelper.setActive(false);
         stopForeground(true);
         mWakeLock.release();
     }

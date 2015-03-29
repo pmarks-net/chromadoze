@@ -17,17 +17,14 @@
 
 package net.pmarks.chromadoze;
 
-import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
-import android.os.Build;
 
-// This file keeps track of AudioFocus events on API >= 8.
+// This file keeps track of AudioFocus events.
 // http://developer.android.com/training/managing-audio/audio-focus.html
 
-@TargetApi(Build.VERSION_CODES.FROYO)
 class AudioFocusHelper implements OnAudioFocusChangeListener {
     private final Context mContext;
     private final SampleShuffler.VolumeListener mVolumeListener;

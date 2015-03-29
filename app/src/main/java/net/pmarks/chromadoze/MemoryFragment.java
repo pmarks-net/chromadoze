@@ -193,13 +193,6 @@ public class MemoryFragment extends ListFragment implements
         // Modify the UI.
         mDslv.setItemChecked(index, true);
         if (scrollThere) {
-            smoothScrollToPositionCompat(index);
-        }
-    }
-
-    @TargetApi(Build.VERSION_CODES.FROYO)
-    private void smoothScrollToPositionCompat(int index) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
             mDslv.smoothScrollToPosition(index);
         }
     }
