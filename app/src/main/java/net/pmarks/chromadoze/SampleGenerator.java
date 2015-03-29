@@ -20,7 +20,7 @@ package net.pmarks.chromadoze;
 import android.os.Process;
 import edu.emory.mathcs.jtransforms.dct.FloatDCT_1D;
 
-public class SampleGenerator {
+class SampleGenerator {
     private final NoiseService mNoiseService;
     private final AudioParams mParams;
     private final SampleShuffler mSampleShuffler;
@@ -150,6 +150,5 @@ public class SampleGenerator {
     }
 
     private static class StopException extends Exception {
-        private static final long serialVersionUID = 8289081873784217385L;
     }
 }

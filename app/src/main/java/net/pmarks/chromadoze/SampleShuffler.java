@@ -45,10 +45,10 @@ individual streams below 32767 / sqrt(2), or ~23170.
 
 class SampleShuffler {
     // These lengths are measured in samples.
-    public static final int SINE_LEN = 1 << 9;
-    public static final int FADE_LEN = SINE_LEN + 1;
-    public static final float BASE_AMPLITUDE = 20000;
-    public static final float CLIP_AMPLITUDE = 23000;  // 32K/sqrt(2)
+    private static final int SINE_LEN = 1 << 9;
+    private static final int FADE_LEN = SINE_LEN + 1;
+    private static final float BASE_AMPLITUDE = 20000;
+    private static final float CLIP_AMPLITUDE = 23000;  // 32K/sqrt(2)
 
     private final AudioParams mParams;
 
@@ -112,7 +112,7 @@ class SampleShuffler {
     }
     
     public interface VolumeListener {
-        public enum DuckLevel { SILENT, DUCK, NORMAL };
+        public enum DuckLevel { SILENT, DUCK, NORMAL }
         public void setDuckLevel(DuckLevel d);
         public void setVolumeLevel(float v);  // Range is 0..1
     }    
@@ -131,13 +131,13 @@ class SampleShuffler {
     // occurrences of the same number.
     private static class ShuffleBag {
         // Chunks that have never been played before, in arbitrary order.
-        private final List<Integer> newQueue = new ArrayList<Integer>();
+        private final List<Integer> newQueue = new ArrayList<>();
         // Recent chunks sit here to avoid being played too soon.
-        private final List<Integer> feederQueue = new ArrayList<Integer>();
+        private final List<Integer> feederQueue = new ArrayList<>();
         // Randomly draw chunks from here.
-        private List<Integer> drawPile = new ArrayList<Integer>();
+        private List<Integer> drawPile = new ArrayList<>();
         // Chunks go here once they've been played.
-        private List<Integer> discardPile = new ArrayList<Integer>();
+        private List<Integer> discardPile = new ArrayList<>();
         
         private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
 
@@ -335,7 +335,7 @@ class SampleShuffler {
     private void changeGlobalVolume(float maxAmplitude, AudioChunk newChunk) {
         mGlobalVolumeFactor = BASE_AMPLITUDE / maxAmplitude;
         List<AudioChunk> oldChunks = exchangeChunk(withPcm(newChunk), false);
-        List<AudioChunk> playedChunks = new ArrayList<AudioChunk>();
+        List<AudioChunk> playedChunks = new ArrayList<>();
 
         // First, process the never-played chunks.
         for (AudioChunk c : oldChunks) {
@@ -386,7 +386,7 @@ class SampleShuffler {
             resetFillState(null);
         }
         List<AudioChunk> oldChunks = mAudioChunks;
-        mAudioChunks = new ArrayList<AudioChunk>();
+        mAudioChunks = new ArrayList<>();
         mAudioChunks.add(chunk);
         mShuffleBag.clear();
         mShuffleBag.put(0, chunk.neverPlayed());
@@ -482,7 +482,7 @@ class SampleShuffler {
         private final short mTweakedSine[];
 
         private int mPos = (int)(SINE_PERIOD * .75);  // Quietest point.
-        private int mSpeed;
+        private final int mSpeed;
 
         public AmpWave(float minVol, float period) {
             if (minVol > .999f || period < .001f) {

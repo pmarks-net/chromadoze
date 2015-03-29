@@ -28,7 +28,7 @@ import android.os.Build;
 // http://developer.android.com/training/managing-audio/audio-focus.html
 
 @TargetApi(Build.VERSION_CODES.FROYO)
-public class AudioFocusHelper implements OnAudioFocusChangeListener {
+class AudioFocusHelper implements OnAudioFocusChangeListener {
     private final Context mContext;
     private final SampleShuffler.VolumeListener mVolumeListener;
     private final AudioManager mAudioManager;

@@ -36,7 +36,7 @@ import android.content.SharedPreferences;
 // - Convert to SpectrumData for playback.
 // - Get and set sound-related values.
 public class PhononMutable implements Phonon {
-    public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
+    private static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
     // The current value of each bar, [0, 1023]
     private static final short BAR_MAX = 1023;
@@ -44,7 +44,7 @@ public class PhononMutable implements Phonon {
 
     private int mMinVol = 100;
 
-    public static int PERIOD_MAX = 53;  // Maps to 60 seconds.
+    public static final int PERIOD_MAX = 53;  // Maps to 60 seconds.
     private int mPeriod = 18;  // Maps to 1 second
 
     private boolean mDirty = true;

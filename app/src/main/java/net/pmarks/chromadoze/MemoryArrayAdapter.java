@@ -28,7 +28,7 @@ import android.widget.TextView;
 
 public class MemoryArrayAdapter extends ArrayAdapter<Phonon> {
 
-    enum Saved { YES, NO, NONE };
+    enum Saved { YES, NO, NONE }
 
     public MemoryArrayAdapter(Context context, List<Phonon> objects) {
         super(context, 0, objects);
@@ -53,7 +53,7 @@ public class MemoryArrayAdapter extends ArrayAdapter<Phonon> {
     }
 
     public void initListItem(View view, Phonon ph, Saved saved) {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         if (ph.getMinVol() != 100) {
             buf.append(ph.getMinVolText());
             buf.append('\n');

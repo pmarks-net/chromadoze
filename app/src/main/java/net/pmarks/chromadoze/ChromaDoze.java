@@ -72,7 +72,7 @@ public class ChromaDoze extends ActionBarActivity implements
         actionBar.setTitle("");
 
         mNavSpinner = (Spinner) findViewById(R.id.nav_spinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 actionBar.getThemedContext(), R.layout.spinner_title,
                 FragmentIndex.getStrings(this));
         adapter.setDropDownViewResource(R.layout.spinner_dropdown);
@@ -252,7 +252,7 @@ public class ChromaDoze extends ActionBarActivity implements
         if (navUp != null) {
             navUp.setClickable(enableUp);
         }
-        
+
         mNavSpinner.setSelection(id);
     }
     

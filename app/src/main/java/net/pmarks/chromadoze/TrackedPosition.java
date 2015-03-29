@@ -22,7 +22,7 @@ package net.pmarks.chromadoze;
 
 public class TrackedPosition {
     // Start at -1, so the scratch position can be tracked as well.
-    public static final int MINVAL = -1;
+    private static final int MINVAL = -1;
 
     // NOWHERE must be larger than any other value, for the math to work.
     public static final int NOWHERE = Integer.MAX_VALUE;
@@ -89,6 +89,5 @@ public class TrackedPosition {
     }
 
     public static class Deleted extends Exception {
-        private static final long serialVersionUID = 5670022571402210462L;
     }
 }

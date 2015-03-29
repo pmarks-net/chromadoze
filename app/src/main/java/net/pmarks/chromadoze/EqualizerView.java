@@ -23,11 +23,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 public class EqualizerView extends android.view.View implements UIState.LockListener {
-    public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
+    private static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
     private final Paint mBarColor[] = new Paint[BAND_COUNT];
     private final Paint mBaseColor[] = new Paint[4];
@@ -96,7 +97,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     private float mLastY;
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean onTouchEvent(@NonNull MotionEvent event) {
         if (mUiState.getLocked()) {
             switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:

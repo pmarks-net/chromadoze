@@ -30,7 +30,7 @@ public class UIState {
 
     private boolean mLocked = false;
     private boolean mLockBusy = false;
-    private final ArrayList<LockListener> mLockListeners = new ArrayList<LockListener>();
+    private final ArrayList<LockListener> mLockListeners = new ArrayList<>();
 
     public final TrackedPosition mActivePos = new TrackedPosition();
     public PhononMutable mScratchPhonon;
@@ -45,7 +45,7 @@ public class UIState {
     private boolean mIgnoreAudioFocus;
     private boolean mVolumeLimitEnabled;
     private int mVolumeLimit;
-    public static int MAX_VOLUME = 100;
+    public static final int MAX_VOLUME = 100;
 
     public void saveState(SharedPreferences.Editor pref) {
         pref.putBoolean("locked", mLocked);
@@ -76,7 +76,7 @@ public class UIState {
         }
 
         // Load the saved phonons.
-        mSavedPhonons = new ArrayList<Phonon>();
+        mSavedPhonons = new ArrayList<>();
         for (int i = 0; i < TrackedPosition.NOWHERE; i++) {
             PhononMutable phm = new PhononMutable();
             if (!phm.loadFromJSON(pref.getString("phonon" + i, null))) {
@@ -167,10 +167,6 @@ public class UIState {
         return mScratchPhonon;
     }
 
-    public Context getContext() {
-        return mContext;
-    }
-
     // -1 or 0..n
     public void setActivePhonon(int index) {
         if (!(-1 <= index && index < mSavedPhonons.size())) {
@@ -183,7 +179,7 @@ public class UIState {
     // This interface is for receiving a callback when the state
     // of the Input Lock has changed.
     public interface LockListener {
-        enum LockEvent { TOGGLE, BUSY };
+        enum LockEvent { TOGGLE, BUSY }
         void onLockStateChange(LockEvent e);
     }
 

@@ -19,7 +19,7 @@ package net.pmarks.chromadoze;
 
 import android.content.Context;
 
-public class FragmentIndex {
+class FragmentIndex {
     static final int ID_CHROMA_DOZE = 0;
     static final int ID_OPTIONS = 1;
     static final int ID_MEMORY = 2;

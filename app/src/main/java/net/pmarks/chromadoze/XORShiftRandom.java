@@ -21,7 +21,7 @@
 
 package net.pmarks.chromadoze;
 
-public class XORShiftRandom {
+class XORShiftRandom {
     private long mState = System.nanoTime();
 
     public long nextLong() {

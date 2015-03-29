@@ -39,12 +39,11 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 
 public class NoiseService extends Service {
-    public static final int PERCENT_MSG = 1;
+    private static final int PERCENT_MSG = 1;
 
     // These must be accessed only from the main thread.
     private static int sLastPercent = -1;
-    private static final ArrayList<PercentListener> sPercentListeners =
-            new ArrayList<PercentListener>();
+    private static final ArrayList<PercentListener> sPercentListeners = new ArrayList<>();
 
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;

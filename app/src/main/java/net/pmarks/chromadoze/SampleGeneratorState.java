@@ -17,7 +17,7 @@
 
 package net.pmarks.chromadoze;
 
-public class SampleGeneratorState {
+class SampleGeneratorState {
     // List of possible chunk stages.
     public static final int S_FIRST_SMALL = 0;
     public static final int S_OTHER_SMALL = 1;

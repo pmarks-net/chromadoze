@@ -33,7 +33,7 @@ import android.util.TypedValue;
 import android.view.View;
 
 public class EqualizerViewLite extends View {
-    public static final int BAND_COUNT = SpectrumData.BAND_COUNT;
+    private static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
     private Phonon mPhonon;
 

@@ -39,12 +39,12 @@ public class SpectrumData implements Parcelable {
         }
     };
 
-    public static final float MIN_FREQ = 100;
-    public static final float MAX_FREQ = 20000;
+    private static final float MIN_FREQ = 100;
+    private static final float MAX_FREQ = 20000;
     public static final int BAND_COUNT = 32;
 
     // The frequency of the edges between each bar.
-    public static final int EDGE_FREQS[] = calculateEdgeFreqs();
+    private static final int[] EDGE_FREQS = calculateEdgeFreqs();
 
     private final float[] mData;
 
