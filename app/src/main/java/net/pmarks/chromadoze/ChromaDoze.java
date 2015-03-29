@@ -68,8 +68,9 @@ public class ChromaDoze extends ActionBarActivity implements
         setSupportActionBar(toolbar);
         
         ActionBar actionBar = getSupportActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setTitle("");
-        
+
         mNavSpinner = (Spinner) findViewById(R.id.nav_spinner);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 actionBar.getThemedContext(), R.layout.spinner_title,
@@ -242,15 +243,9 @@ public class ChromaDoze extends ActionBarActivity implements
         final boolean enableUp = id != FragmentIndex.ID_CHROMA_DOZE;
         ActionBar actionBar = getSupportActionBar();
         supportInvalidateOptionsMenu();
-        
-        if (enableUp) {
-            // Restore the default left-arrow icon.
-            actionBar.setDisplayHomeAsUpEnabled(false);
-            actionBar.setDisplayHomeAsUpEnabled(true);
-        } else {
-            // Use a scaled-down Chroma Doze icon.
-            actionBar.setHomeAsUpIndicator(mToolbarIcon);
-        }
+
+        // Use the default left arrow, or a scaled-down Chroma Doze icon.
+        actionBar.setHomeAsUpIndicator(enableUp ? null : mToolbarIcon);
 
         // When we're on the main page, make the icon non-clickable.
         ImageButton navUp = findImageButton(findViewById(R.id.toolbar));
