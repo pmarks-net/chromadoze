@@ -30,13 +30,13 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:paddingBottom="10sp"
-        android:text="© 2014 Paul Marks" />
+        android:text="© 2015 Paul Marks" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="web"
-        android:text="https://chromadoze.googlecode.com/" />
+        android:text="https://github.com/pmarks-net/chromadoze" />
 
     <TextView
         android:layout_width="wrap_content"
