@@ -34,8 +34,8 @@ class FragmentIndex {
         out[ID_ABOUT] = getPaddedString(context, R.string.about_menu);
         return out;
     }
-    
+
     private static String getPaddedString(Context context, int resId) {
-        return context.getString(resId) + "  ";        
+        return context.getString(resId) + "  ";
     }
 }

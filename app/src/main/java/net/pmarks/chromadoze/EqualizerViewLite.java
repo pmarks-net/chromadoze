@@ -105,7 +105,7 @@ public class EqualizerViewLite extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         mWidth = getWidth();
         mHeight = getHeight();
-        mBarWidth = (float)mWidth / BAND_COUNT;
+        mBarWidth = (float) mWidth / BAND_COUNT;
         mBitmap = null;
     }
 

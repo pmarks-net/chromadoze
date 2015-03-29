@@ -33,19 +33,19 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.main_fragment, container, false);
 
-        mEqualizer = (EqualizerView)v.findViewById(R.id.EqualizerView);
-        mStateText = (TextView)v.findViewById(R.id.StateText);
-        mPercentBar = (ProgressBar)v.findViewById(R.id.PercentBar);
+        mEqualizer = (EqualizerView) v.findViewById(R.id.EqualizerView);
+        mStateText = (TextView) v.findViewById(R.id.StateText);
+        mPercentBar = (ProgressBar) v.findViewById(R.id.PercentBar);
         return v;
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mUiState = ((ChromaDoze)getActivity()).getUIState();
+        mUiState = ((ChromaDoze) getActivity()).getUIState();
         mEqualizer.setUiState(mUiState);
     }
 
@@ -56,7 +56,7 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
         NoiseService.addPercentListener(this);
         mUiState.addLockListener(mEqualizer);
 
-        ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_CHROMA_DOZE);
+        ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_CHROMA_DOZE);
     }
 
     @Override

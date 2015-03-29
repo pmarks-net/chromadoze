@@ -61,20 +61,20 @@ class SampleGeneratorState {
         if (mChunkNumber < N_SMALL_CHUNKS) {
             // Small chunk.
             switch (mChunkNumber) {
-            case 0:
-                return S_FIRST_SMALL;
-            default:
-                return S_OTHER_SMALL;
+                case 0:
+                    return S_FIRST_SMALL;
+                default:
+                    return S_OTHER_SMALL;
             }
         } else if (mChunkNumber < N_SMALL_CHUNKS + N_VOLUME_CHUNKS) {
             // Large chunk, with volume computation.
             switch (mChunkNumber) {
-            case N_SMALL_CHUNKS:
-                return S_FIRST_VOLUME;
-            case N_SMALL_CHUNKS + N_VOLUME_CHUNKS - 1:
-                return S_LAST_VOLUME;
-            default:
-                return S_OTHER_VOLUME;
+                case N_SMALL_CHUNKS:
+                    return S_FIRST_VOLUME;
+                case N_SMALL_CHUNKS + N_VOLUME_CHUNKS - 1:
+                    return S_LAST_VOLUME;
+                default:
+                    return S_OTHER_VOLUME;
             }
         } else {
             // Large chunk, volume already set.

@@ -17,9 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import net.pmarks.chromadoze.MemoryArrayAdapter.Saved;
-import android.annotation.TargetApi;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
@@ -32,6 +29,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import com.mobeta.android.dslv.DragSortListView;
 import com.mobeta.android.dslv.DragSortListView.DropListener;
 import com.mobeta.android.dslv.DragSortListView.RemoveListener;
+
+import net.pmarks.chromadoze.MemoryArrayAdapter.Saved;
 
 public class MemoryFragment extends ListFragment implements
         OnItemClickListener, DropListener, RemoveListener {
@@ -47,7 +46,7 @@ public class MemoryFragment extends ListFragment implements
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         mDslv = (DragSortListView) inflater.inflate(R.layout.memory_list,
                 container, false);
 
@@ -144,7 +143,7 @@ public class MemoryFragment extends ListFragment implements
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position,
-            long id) {
+                            long id) {
         mUiState.setActivePhonon(position == 0 ?
                 -1 : position - mDslv.getHeaderViewsCount());
 

@@ -17,9 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import java.util.ArrayList;
-
-import junit.framework.Assert;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -37,6 +34,10 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+
+import junit.framework.Assert;
+
+import java.util.ArrayList;
 
 public class NoiseService extends Service {
     private static final int PERCENT_MSG = 1;
@@ -69,12 +70,12 @@ public class NoiseService extends Service {
         AudioParams params = new AudioParams();
         mSampleShuffler = new SampleShuffler(params);
         mSampleGenerator = new SampleGenerator(this, params, mSampleShuffler);
-        PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
         mWakeLock.acquire();
 
         startForeground(NOTIFY_ID, makeNotify());
-        
+
         // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
         mAudioFocusHelper = new AudioFocusHelper(
                 getApplicationContext(), mSampleShuffler.getVolumeListener());
@@ -101,7 +102,7 @@ public class NoiseService extends Service {
 
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
-        
+
         // If the device is under enough memory pressure to kill a foreground
         // service, it's probably best to wait for the user to restart it.
         //
@@ -110,7 +111,7 @@ public class NoiseService extends Service {
         // "ActiveServices.java" to see how that works.
         return START_NOT_STICKY;
     }
-    
+
     @Override
     public void onDestroy() {
         mSampleGenerator.stopThread();
@@ -170,14 +171,14 @@ public class NoiseService extends Service {
                 new Intent(this, NoiseService.class).putExtra("stop", true),
                 0);
         rv.setOnClickPendingIntent(R.id.stop_button, pendingIntent);
-        
+
         // Pre-render the original RV, and copy some of the colors.
         final View inflated = n.contentView.apply(this, new FrameLayout(this));
         final TextView titleText = findTextView(inflated, getString(R.string.app_name));
         final TextView defaultText = findTextView(inflated, getString(R.string.notification_text));
         rv.setInt(R.id.divider, "setBackgroundColor", defaultText.getTextColors().getDefaultColor());
         rv.setInt(R.id.stop_button_square, "setBackgroundColor", titleText.getTextColors().getDefaultColor());
-        
+
         // Insert a copy of the original RV into the new one.
         rv.addView(R.id.notification_insert, n.contentView.clone());
 
@@ -186,7 +187,7 @@ public class NoiseService extends Service {
         n.contentView.removeAllViews(id);
         n.contentView.addView(id, rv);
     }
-    
+
     private static TextView findTextView(View view, String title) {
         if (view instanceof TextView) {
             TextView text = (TextView) view;
@@ -238,9 +239,9 @@ public class NoiseService extends Service {
     public interface PercentListener {
         void onNoiseServicePercentChange(int percent);
     }
-    
+
     public static void sendStopIntent(Context ctx) {
         Intent intent = new Intent(ctx, NoiseService.class);
         ctx.stopService(intent);
-    }    
+    }
 }

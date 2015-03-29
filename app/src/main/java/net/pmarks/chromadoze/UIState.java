@@ -17,12 +17,13 @@
 
 package net.pmarks.chromadoze;
 
-import java.util.ArrayList;
-
-import junit.framework.Assert;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+
+import junit.framework.Assert;
+
+import java.util.ArrayList;
 
 public class UIState {
 
@@ -53,7 +54,7 @@ public class UIState {
         pref.putBoolean("ignoreAudioFocus", mIgnoreAudioFocus);
         pref.putInt("volumeLimit", getVolumeLimit());
         pref.putString("phononS", mScratchPhonon.toJSON());
-        for (int i = 0 ; i < mSavedPhonons.size(); i++) {
+        for (int i = 0; i < mSavedPhonons.size(); i++) {
             pref.putString("phonon" + i, mSavedPhonons.get(i).toJSON());
             mSavedPhonons.get(i);
         }
@@ -110,12 +111,12 @@ public class UIState {
     public void sendToService() {
         Intent intent = new Intent(mContext, NoiseService.class);
         getPhonon().writeIntent(intent);
-        intent.putExtra("volumeLimit", (float)getVolumeLimit() / MAX_VOLUME);
+        intent.putExtra("volumeLimit", (float) getVolumeLimit() / MAX_VOLUME);
         intent.putExtra("ignoreAudioFocus", mIgnoreAudioFocus);
         mContext.startService(intent);
         mDirty = false;
     }
-    
+
     public boolean sendIfDirty() {
         if (mDirty || (mActivePos.getPos() == -1 && mScratchPhonon.isDirty())) {
             sendToService();
@@ -179,7 +180,8 @@ public class UIState {
     // This interface is for receiving a callback when the state
     // of the Input Lock has changed.
     public interface LockListener {
-        enum LockEvent { TOGGLE, BUSY }
+        enum LockEvent {TOGGLE, BUSY}
+
         void onLockStateChange(LockEvent e);
     }
 
@@ -194,11 +196,11 @@ public class UIState {
             }
         }
     }
-    
+
     public boolean getAutoPlay() {
         return mAutoPlay;
     }
-    
+
     public void setIgnoreAudioFocus(boolean enabled) {
         if (mIgnoreAudioFocus == enabled) {
             return;
@@ -206,7 +208,7 @@ public class UIState {
         mIgnoreAudioFocus = enabled;
         mDirty = true;
     }
-    
+
     public boolean getIgnoreAudioFocus() {
         return mIgnoreAudioFocus;
     }

@@ -63,7 +63,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
         int i = 0;
         for (int v : new int[]{100, 75, 55, 50}) {
             Paint p = new Paint();
-            p.setColor(Color.rgb(v, v,v));
+            p.setColor(Color.rgb(v, v, v));
             mBaseColor[i++] = p;
         }
 
@@ -100,28 +100,28 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     public boolean onTouchEvent(@NonNull MotionEvent event) {
         if (mUiState.getLocked()) {
             switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                mUiState.setLockBusy(true);
-                return true;
-            case MotionEvent.ACTION_UP:
-                mUiState.setLockBusy(false);
-                return true;
-            case MotionEvent.ACTION_MOVE:
-                return true;
+                case MotionEvent.ACTION_DOWN:
+                    mUiState.setLockBusy(true);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    mUiState.setLockBusy(false);
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    return true;
             }
             return false;
         }
 
         switch (event.getAction()) {
-        case MotionEvent.ACTION_DOWN:
-            mLastX = event.getX();
-            mLastY = event.getY();
-            break;
-        case MotionEvent.ACTION_UP:
-        case MotionEvent.ACTION_MOVE:
-            break;
-        default:
-            return false;
+            case MotionEvent.ACTION_DOWN:
+                mLastX = event.getX();
+                mLastY = event.getY();
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_MOVE:
+                break;
+            default:
+                return false;
         }
 
         PhononMutable phm = mUiState.getPhononMutable();
@@ -129,7 +129,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
             touchLine(phm, event.getHistoricalX(i), event.getHistoricalY(i));
         }
         touchLine(phm, event.getX(), event.getY());
-        
+
         if (mUiState.sendIfDirty()) {
             invalidate();
         }
@@ -160,7 +160,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     }
 
     private int getBarIndex(float x) {
-        int out = (int)(x / mBarWidth);
+        int out = (int) (x / mBarWidth);
         if (out < 0) {
             out = 0;
         }

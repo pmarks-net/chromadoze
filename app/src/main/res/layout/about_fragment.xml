@@ -3,7 +3,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="10sp" >
+    android:padding="10sp">
 
     <TextView
         style="@android:style/TextAppearance.Medium"
@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="Chroma Doze" />
-    
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -44,7 +44,7 @@
         android:paddingTop="10sp"
         android:text="JTransforms © 2009 Piotr Wendykier\nDragSortListView © 2013 Carl Bauer" />
 
-    
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

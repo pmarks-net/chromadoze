@@ -35,6 +35,6 @@ class XORShiftRandom {
 
     // Get a random number from [0, limit), for small values of limit.
     public int nextInt(int limit) {
-        return ((int)nextLong() & 0x7FFFFFFF) % limit;
+        return ((int) nextLong() & 0x7FFFFFFF) % limit;
     }
 }

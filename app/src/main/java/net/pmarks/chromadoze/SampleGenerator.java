@@ -18,6 +18,7 @@
 package net.pmarks.chromadoze;
 
 import android.os.Process;
+
 import edu.emory.mathcs.jtransforms.dct.FloatDCT_1D;
 
 class SampleGenerator {
@@ -36,7 +37,7 @@ class SampleGenerator {
     private final XORShiftRandom mRandom = new XORShiftRandom();  // Not thread safe.
 
     public SampleGenerator(NoiseService noiseService, AudioParams params,
-            SampleShuffler sampleShuffler) {
+                           SampleShuffler sampleShuffler) {
         mNoiseService = noiseService;
         mParams = params;
         mSampleShuffler = sampleShuffler;
@@ -137,10 +138,10 @@ class SampleGenerator {
         spectrum.fill(dctData, mParams.SAMPLE_RATE);
 
         // Multiply by a block of white noise.
-        for (int i = 0; i < dctSize;) {
+        for (int i = 0; i < dctSize; ) {
             long rand = mRandom.nextLong();
             for (int b = 0; b < 8; b++) {
-                dctData[i++] *= (byte)rand / 128f;
+                dctData[i++] *= (byte) rand / 128f;
                 rand >>= 8;
             }
         }

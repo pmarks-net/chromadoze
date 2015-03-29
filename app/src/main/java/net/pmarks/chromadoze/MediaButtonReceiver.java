@@ -34,10 +34,10 @@ public class MediaButtonReceiver extends BroadcastReceiver {
             return;
         }
         switch (event.getKeyCode()) {
-        case KeyEvent.KEYCODE_MEDIA_STOP:
-        case KeyEvent.KEYCODE_MEDIA_PAUSE:
-            NoiseService.sendStopIntent(context);
-            break;
+            case KeyEvent.KEYCODE_MEDIA_STOP:
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                NoiseService.sendStopIntent(context);
+                break;
         }
     }
 }

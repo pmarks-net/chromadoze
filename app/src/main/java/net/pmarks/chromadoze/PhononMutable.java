@@ -17,15 +17,15 @@
 
 package net.pmarks.chromadoze;
 
-import java.util.Arrays;
-import java.util.Locale;
+import android.content.Intent;
+import android.content.SharedPreferences;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Intent;
-import android.content.SharedPreferences;
+import java.util.Arrays;
+import java.util.Locale;
 
 // A Phonon represents a collection of user-tweakable sound
 // information, presented as a single row in the "Memory" view.
@@ -87,7 +87,7 @@ public class PhononMutable implements Phonon {
                 if (!(0 <= b && b <= BAR_MAX)) {
                     return false;
                 }
-                mBars[i] = (short)b;
+                mBars[i] = (short) b;
             }
         } catch (JSONException e) {
             return false;
@@ -125,7 +125,7 @@ public class PhononMutable implements Phonon {
         } else if (value >= 1f) {
             sval = BAR_MAX;
         } else {
-            sval = (short)(value * BAR_MAX);
+            sval = (short) (value * BAR_MAX);
         }
         if (mBars[band] != sval) {
             mBars[band] = sval;
@@ -135,7 +135,7 @@ public class PhononMutable implements Phonon {
 
     @Override
     public float getBar(int band) {
-        return mBars[band] / (float)BAR_MAX;
+        return mBars[band] / (float) BAR_MAX;
     }
 
     private float[] getAllBars() {
@@ -268,7 +268,7 @@ public class PhononMutable implements Phonon {
 
     @Override
     public boolean fastEquals(Phonon other) {
-        PhononMutable o = (PhononMutable)other;
+        PhononMutable o = (PhononMutable) other;
         if (mDirty || o.mDirty) {
             throw new IllegalStateException();
         }

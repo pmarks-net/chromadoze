@@ -17,8 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import java.util.List;
-
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,9 +24,11 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import java.util.List;
+
 public class MemoryArrayAdapter extends ArrayAdapter<Phonon> {
 
-    enum Saved { YES, NO, NONE }
+    enum Saved {YES, NO, NONE}
 
     public MemoryArrayAdapter(Context context, List<Phonon> objects) {
         super(context, 0, objects);
@@ -67,7 +67,7 @@ public class MemoryArrayAdapter extends ArrayAdapter<Phonon> {
         } else if (saved == Saved.NO) {
             buf.append(getContext().getString(R.string.unsaved));
         }
-        ((TextView)view.findViewById(R.id.text)).setText(buf.toString());
-        ((EqualizerViewLite)view.findViewById(R.id.EqualizerView)).setPhonon(ph);
+        ((TextView) view.findViewById(R.id.text)).setText(buf.toString());
+        ((EqualizerViewLite) view.findViewById(R.id.EqualizerView)).setPhonon(ph);
     }
 }

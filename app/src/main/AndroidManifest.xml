@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.pmarks.chromadoze"
     android:versionCode="16"
-    android:versionName="3.5" >
+    android:versionName="3.5">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
@@ -10,18 +10,18 @@
         android:allowBackup="true"
         android:icon="@drawable/chromadoze_icon"
         android:label="@string/app_name"
-        android:theme="@style/Theme.ChromaDozeTheme" >
+        android:theme="@style/Theme.ChromaDozeTheme">
         <activity
             android:name=".ChromaDoze"
             android:label="@string/app_name"
-            android:launchMode="singleTask" >
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <receiver android:name=".MediaButtonReceiver" >
+        <receiver android:name=".MediaButtonReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>

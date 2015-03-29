@@ -42,27 +42,27 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.options_fragment, container, false);
 
         mMinVolSeek = (SeekBar) v.findViewById(R.id.MinVolSeek);
         mMinVolText = (TextView) v.findViewById(R.id.MinVolText);
         mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
         mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
-        
+
         mAutoPlayCheck = (SwitchCompat) v.findViewById(R.id.AutoPlayCheck);
 
         mIgnoreAudioFocusCheck = (SwitchCompat) v.findViewById(R.id.IgnoreAudioFocusCheck);
         mVolumeLimitCheck = (SwitchCompat) v.findViewById(R.id.VolumeLimitCheck);
         mVolumeLimitSeek = (SeekBar) v.findViewById(R.id.VolumeLimitSeek);
-        
+
         return v;
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mUiState = ((ChromaDoze)getActivity()).getUIState();
+        mUiState = ((ChromaDoze) getActivity()).getUIState();
         final Phonon ph = mUiState.getPhonon();
 
         mMinVolText.setText(ph.getMinVolText());
@@ -78,7 +78,7 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
 
         mAutoPlayCheck.setChecked(mUiState.getAutoPlay());
         mAutoPlayCheck.setOnCheckedChangeListener(this);
-        
+
         mIgnoreAudioFocusCheck.setChecked(mUiState.getIgnoreAudioFocus());
         mIgnoreAudioFocusCheck.setOnCheckedChangeListener(this);
 
@@ -91,12 +91,12 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
     @Override
     public void onResume() {
         super.onResume();
-        ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_OPTIONS);
+        ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_OPTIONS);
     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress,
-            boolean fromUser) {
+                                  boolean fromUser) {
         if (!fromUser) {
             return;
         }
@@ -116,7 +116,7 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
         }
         mUiState.sendIfDirty();
     }
-    
+
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (buttonView == mAutoPlayCheck) {
@@ -129,7 +129,7 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
         }
         mUiState.sendIfDirty();
     }
-    
+
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
     }

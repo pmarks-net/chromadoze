@@ -30,7 +30,7 @@ import android.widget.TextView;
 public class AboutFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.about_fragment, container, false);
 
         PackageInfo pinfo;
@@ -42,7 +42,7 @@ public class AboutFragment extends Fragment {
         }
 
         // Evaluate the format string in VersionText.
-        TextView versionText = (TextView)v.findViewById(R.id.VersionText);
+        TextView versionText = (TextView) v.findViewById(R.id.VersionText);
         String versionFormat = versionText.getText().toString();
         versionText.setText(String.format(versionFormat, pinfo.versionName));
 
@@ -52,7 +52,7 @@ public class AboutFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        ((ChromaDoze)getActivity()).setFragmentId(FragmentIndex.ID_ABOUT);
+        ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_ABOUT);
     }
 
 }

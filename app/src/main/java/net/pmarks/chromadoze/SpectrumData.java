@@ -52,7 +52,7 @@ public class SpectrumData implements Parcelable {
         int[] edgeFreqs = new int[BAND_COUNT + 1];
         float range = MAX_FREQ / MIN_FREQ;
         for (int i = 0; i <= BAND_COUNT; i++) {
-            edgeFreqs[i] = (int)(MIN_FREQ * Math.pow(range, (float)i / BAND_COUNT));
+            edgeFreqs[i] = (int) (MIN_FREQ * Math.pow(range, (float) i / BAND_COUNT));
         }
         return edgeFreqs;
     }
@@ -66,7 +66,7 @@ public class SpectrumData implements Parcelable {
             if (mData[i] <= 0f) {
                 mData[i] = 0f;
             } else {
-                mData[i] = 0.001f * (float)Math.pow(1000, mData[i]);
+                mData[i] = 0.001f * (float) Math.pow(1000, mData[i]);
             }
         }
     }

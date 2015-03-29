@@ -4,7 +4,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="horizontal"
-    tools:context=".NoiseService" >
+    tools:context=".NoiseService">
 
     <FrameLayout
         android:id="@+id/notification_insert"
@@ -27,7 +27,7 @@
         style="?android:attr/borderlessButtonStyle"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:minWidth="64dp" >
+        android:minWidth="64dp">
 
         <TextView
             android:id="@+id/stop_button_square"
