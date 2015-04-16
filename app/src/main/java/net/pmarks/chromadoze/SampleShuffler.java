@@ -612,8 +612,6 @@ class SampleShuffler {
                 default:
                     throw new IllegalArgumentException("Invalid DuckLevel: " + mDuckLevel);
             }
-            v = AudioTrack.getMinVolume() +
-                    (AudioTrack.getMaxVolume() - AudioTrack.getMinVolume()) * v;
             mTrack.setStereoVolume(v, v);
         }
 
