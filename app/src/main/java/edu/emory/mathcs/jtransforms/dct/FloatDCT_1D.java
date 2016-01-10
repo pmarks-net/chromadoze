@@ -36,8 +36,6 @@ package edu.emory.mathcs.jtransforms.dct;
 
 import java.util.concurrent.Future;
 
-import android.util.FloatMath;
-
 /* DISABLED
 import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D;
 */
@@ -46,7 +44,6 @@ import edu.emory.mathcs.utils.ConcurrencyUtils;
 // Note: I hacked up this library a bit for Chroma Doze:
 // - Deleted files that were unnecessary for the IDCT operation.
 // - Commented out large portions of this file.
-// - Switched some functions from 'Math' to Android's 'FloatMath'
 // - Got rid of all occurrences of 'double'
 
 /**
@@ -231,8 +228,8 @@ public class FloatDCT_1D {
         if (isPowerOfTwo) {
             float xr;
             if (scale) {
-                scale(FloatMath.sqrt(2.0f / n), a, offa);
-                a[offa] = (a[offa] / FloatMath.sqrt(2.0f));
+                scale((float) Math.sqrt(2.0f / n), a, offa);
+                a[offa] = (a[offa] / (float) Math.sqrt(2.0f));
             }
             dctsub(n, a, offa, nc, w, nw);
             if (n > 4) {
@@ -302,8 +299,8 @@ public class FloatDCT_1D {
         for (int j = 1; j < n; j++) {
             idx = 2 * j;
             deltaj = delta * j;
-            c[idx] = FloatMath.cos(deltaj);
-            c[idx + 1] = -FloatMath.sin(deltaj);
+            c[idx] = (float) Math.cos(deltaj);
+            c[idx + 1] = -(float) Math.sin(deltaj);
         }
         return c;
     }
@@ -320,23 +317,23 @@ public class FloatDCT_1D {
             nwh = nw >> 1;
             delta = 0.785398163397448278999490867136046290f / nwh;
             delta2 = delta * 2;
-            wn4r = FloatMath.cos(delta * nwh);
+            wn4r = (float) Math.cos(delta * nwh);
             w[0] = 1;
             w[1] = wn4r;
             if (nwh == 4) {
-                w[2] = FloatMath.cos(delta2);
-                w[3] = FloatMath.sin(delta2);
+                w[2] = (float) Math.cos(delta2);
+                w[3] = (float) Math.sin(delta2);
             } else if (nwh > 4) {
                 makeipt(nw);
-                w[2] = (0.5f / FloatMath.cos(delta2));
-                w[3] = (0.5f / FloatMath.cos(delta * 6));
+                w[2] = (0.5f / (float) Math.cos(delta2));
+                w[3] = (0.5f / (float) Math.cos(delta * 6));
                 for (j = 4; j < nwh; j += 4) {
                     deltaj = delta * j;
                     deltaj3 = 3 * deltaj;
-                    w[j] = FloatMath.cos(deltaj);
-                    w[j + 1] = FloatMath.sin(deltaj);
-                    w[j + 2] = FloatMath.cos(deltaj3);
-                    w[j + 3] = -FloatMath.sin(deltaj3);
+                    w[j] = (float) Math.cos(deltaj);
+                    w[j + 1] = (float) Math.sin(deltaj);
+                    w[j + 2] = (float) Math.cos(deltaj3);
+                    w[j + 3] = -(float) Math.sin(deltaj3);
                 }
             }
             nw0 = 0;
@@ -399,12 +396,12 @@ public class FloatDCT_1D {
         if (nc > 1) {
             nch = nc >> 1;
             delta = 0.785398163397448278999490867136046290f / nch;
-            c[startc] = FloatMath.cos(delta * nch);
+            c[startc] = (float) Math.cos(delta * nch);
             c[startc + nch] = (0.5f * c[startc]);
             for (j = 1; j < nch; j++) {
                 deltaj = delta * j;
-                c[startc + j] = (0.5f * FloatMath.cos(deltaj));
-                c[startc + nc - j] = (0.5f * FloatMath.sin(deltaj));
+                c[startc + j] = (0.5f * (float) Math.cos(deltaj));
+                c[startc + nc - j] = (0.5f * (float) Math.sin(deltaj));
             }
         }
     }
