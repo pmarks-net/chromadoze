@@ -125,10 +125,6 @@ public class UIState {
         return false;
     }
 
-    public void stopService() {
-        NoiseService.sendStopIntent(mContext);
-    }
-
     public void toggleLocked() {
         mLocked = !mLocked;
         if (!mLocked) {
@@ -192,7 +188,7 @@ public class UIState {
             if (enabled) {
                 sendToService();
             } else {
-                stopService();
+                NoiseService.stopNow(mContext, R.string.stop_reason_autoplay);
             }
         }
     }

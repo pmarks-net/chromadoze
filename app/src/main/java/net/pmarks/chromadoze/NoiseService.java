@@ -29,6 +29,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -37,7 +38,9 @@ import android.widget.TextView;
 
 import junit.framework.Assert;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class NoiseService extends Service {
     private static final int PERCENT_MSG = 1;
@@ -46,12 +49,20 @@ public class NoiseService extends Service {
     private static int sLastPercent = -1;
     private static final ArrayList<PercentListener> sPercentListeners = new ArrayList<>();
 
+    // Save the reason for the most recent stop/restart.  In theory, it would
+    // be more correct to use persistent storage, but the values should stick
+    // around in RAM long enough for practical purposes.
+    private static Date sStopTimestamp = null;
+    private static int sStopReasonId = 0;
+
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
     private AudioFocusHelper mAudioFocusHelper;
 
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
+
+    private int lastStartId = -1;
 
     private Handler mPercentHandler;
 
@@ -83,10 +94,23 @@ public class NoiseService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // Handle the notification bar Stop button.
-        if (intent.getBooleanExtra("stop", false)) {
-            stopSelf();
+        // When multiple spectra arrive, only the latest should remain active.
+        if (lastStartId >= 0) {
+            stopSelf(lastStartId);
+            lastStartId = -1;
+        }
+
+        // Handle the Stop intent.
+        int stopReasonId = intent.getIntExtra("stopReasonId", 0);
+        if (stopReasonId != 0) {
+            saveStopReason(stopReasonId);
+            stopSelf(startId);
             return START_NOT_STICKY;
+        }
+
+        // Notify the user that the OS restarted the process.
+        if ((flags & START_FLAG_REDELIVERY) != 0) {
+            saveStopReason(R.string.stop_reason_restarted);
         }
 
         SpectrumData spectrum = intent.getParcelableExtra("spectrum");
@@ -103,17 +127,22 @@ public class NoiseService extends Service {
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
 
-        // If the device is under enough memory pressure to kill a foreground
-        // service, it's probably best to wait for the user to restart it.
-        //
-        // Note that switching to START_REDELIVER_INTENT here would probably
-        // cause a leak, because we never call stopSelf(startId).  Search for
-        // "ActiveServices.java" to see how that works.
-        return START_NOT_STICKY;
+        // If the kernel decides to kill this process, let Android restart it
+        // using the most-recent spectrum.  It's important that we call
+        // stopSelf() with this startId when a replacement spectrum arrives,
+        // or if we're stopping the service intentionally.
+        lastStartId = startId;
+        return START_REDELIVER_INTENT;
     }
 
     @Override
     public void onDestroy() {
+        if (lastStartId != -1) {
+            // This condition can be triggered from adb shell:
+            // $ am stopservice net.pmarks.chromadoze/.NoiseService
+            saveStopReason(R.string.stop_reason_mysterious);
+        }
+
         mSampleGenerator.stopThread();
         mSampleShuffler.stopThread();
 
@@ -168,8 +197,8 @@ public class NoiseService extends Service {
         PendingIntent pendingIntent = PendingIntent.getService(
                 this,
                 0,
-                new Intent(this, NoiseService.class).putExtra("stop", true),
-                0);
+                newStopIntent(this, R.string.stop_reason_notification),
+                PendingIntent.FLAG_CANCEL_CURRENT);
         rv.setOnClickPendingIntent(R.id.stop_button, pendingIntent);
 
         // Pre-render the original RV, and copy some of the colors.
@@ -218,7 +247,7 @@ public class NoiseService extends Service {
     // This must run in the main thread.
     private static void updatePercent(int percent) {
         for (PercentListener listener : sPercentListeners) {
-            listener.onNoiseServicePercentChange(percent);
+            listener.onNoiseServicePercentChange(percent, sStopTimestamp, sStopReasonId);
         }
         sLastPercent = percent;
     }
@@ -227,7 +256,7 @@ public class NoiseService extends Service {
     // This must run in the main thread.
     public static void addPercentListener(PercentListener listener) {
         sPercentListeners.add(listener);
-        listener.onNoiseServicePercentChange(sLastPercent);
+        listener.onNoiseServicePercentChange(sLastPercent, sStopTimestamp, sStopReasonId);
     }
 
     public static void removePercentListener(PercentListener listener) {
@@ -237,11 +266,19 @@ public class NoiseService extends Service {
     }
 
     public interface PercentListener {
-        void onNoiseServicePercentChange(int percent);
+        void onNoiseServicePercentChange(int percent, Date stopTimestamp, int stopReasonId);
     }
 
-    public static void sendStopIntent(Context ctx) {
-        Intent intent = new Intent(ctx, NoiseService.class);
-        ctx.stopService(intent);
+    private static Intent newStopIntent(Context ctx, int stopReasonId) {
+        return new Intent(ctx, NoiseService.class).putExtra("stopReasonId", stopReasonId);
+    }
+
+    public static void stopNow(Context ctx, int stopReasonId) {
+        ctx.startService(newStopIntent(ctx, stopReasonId));
+    }
+
+    private static void saveStopReason(int stopReasonId) {
+        sStopTimestamp = new Date();
+        sStopReasonId = stopReasonId;
     }
 }

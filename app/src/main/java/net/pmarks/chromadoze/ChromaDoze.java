@@ -41,6 +41,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.Spinner;
 
+import java.util.Date;
+
 public class ChromaDoze extends ActionBarActivity implements
         NoiseService.PercentListener, UIState.LockListener, OnItemSelectedListener {
     private static final int MENU_PLAY_STOP = 1;
@@ -115,7 +117,7 @@ public class ChromaDoze extends ActionBarActivity implements
         // If the equalizer is silent, stop the service.
         // This makes it harder to leave running accidentally.
         if (mServiceActive && mUiState.getPhonon().isSilent()) {
-            mUiState.stopService();
+            NoiseService.stopNow(getApplication(), R.string.stop_reason_silent);
         }
 
         SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
@@ -191,7 +193,7 @@ public class ChromaDoze extends ActionBarActivity implements
                 if (!mServiceActive) {
                     mUiState.sendToService();
                 } else {
-                    mUiState.stopService();
+                    NoiseService.stopNow(getApplication(), R.string.stop_reason_toolbar);
                 }
                 return true;
             case MENU_LOCK:
@@ -203,7 +205,7 @@ public class ChromaDoze extends ActionBarActivity implements
     }
 
     @Override
-    public void onNoiseServicePercentChange(int percent) {
+    public void onNoiseServicePercentChange(int percent, Date stopTimestamp, int stopReasonId) {
         boolean newServiceActive = (percent >= 0);
         if (mServiceActive != newServiceActive) {
             mServiceActive = newServiceActive;

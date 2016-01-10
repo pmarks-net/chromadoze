@@ -69,7 +69,7 @@ class AudioFocusHelper implements OnAudioFocusChangeListener {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
                 // For example, a music player or a sleep timer stealing focus.
-                NoiseService.sendStopIntent(mContext);
+                NoiseService.stopNow(mContext, R.string.stop_reason_audiofocus);
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 // For example, an alarm or phone call.

@@ -25,6 +25,9 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 public class MainFragment extends Fragment implements NoiseService.PercentListener {
     private EqualizerView mEqualizer;
     private TextView mStateText;
@@ -68,17 +71,36 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
     }
 
     @Override
-    public void onNoiseServicePercentChange(int percent) {
-        int vis;
+    public void onNoiseServicePercentChange(int percent, Date stopTimestamp, int stopReasonId) {
+        boolean showGenerating = false;
+        boolean showStopReason = false;
         if (percent < 0) {
-            vis = View.INVISIBLE;
+            mPercentBar.setVisibility(View.INVISIBLE);
+            // While the service is stopped, show what event caused it to stop.
+            showStopReason = (stopReasonId != 0);
         } else if (percent < 100) {
+            mPercentBar.setVisibility(View.VISIBLE);
             mPercentBar.setProgress(percent);
-            vis = View.VISIBLE;
+            showGenerating = true;
         } else {
-            vis = View.INVISIBLE;
+            mPercentBar.setVisibility(View.INVISIBLE);
+            // While the service is active, only the restart event is worth showing.
+            showStopReason = (stopReasonId == R.string.stop_reason_restarted);
         }
-        mPercentBar.setVisibility(vis);
-        mStateText.setVisibility(vis);
+        if (showStopReason) {
+            // Expire the message after 12 hours, to avoid date ambiguity.
+            long diff = new Date().getTime() - stopTimestamp.getTime();
+            if (diff > 12 * 3600 * 1000L) {
+                showStopReason = false;
+            }
+        }
+        if (showGenerating) {
+            mStateText.setText(R.string.generating);
+        } else if (showStopReason) {
+            String timeFmt = DateFormat.getTimeInstance(DateFormat.SHORT).format(stopTimestamp);
+            mStateText.setText(timeFmt + ": " + getString(stopReasonId));
+        } else {
+            mStateText.setText("");
+        }
     }
 }

@@ -36,7 +36,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
         switch (event.getKeyCode()) {
             case KeyEvent.KEYCODE_MEDIA_STOP:
             case KeyEvent.KEYCODE_MEDIA_PAUSE:
-                NoiseService.sendStopIntent(context);
+                NoiseService.stopNow(context, R.string.stop_reason_mediabutton);
                 break;
         }
     }
