@@ -30,7 +30,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:paddingBottom="10sp"
-        android:text="© 2015 Paul Marks" />
+        android:text="© 2016 Paul Marks" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -42,7 +42,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="10sp"
-        android:text="JTransforms © 2009 Piotr Wendykier\nDragSortListView © 2013 Carl Bauer" />
+        android:text="JTransforms © 2015 Piotr Wendykier\nDragSortListView © 2013 Carl Bauer" />
 
 
     <TextView

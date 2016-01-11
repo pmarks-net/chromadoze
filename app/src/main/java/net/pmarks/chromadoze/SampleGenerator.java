@@ -19,7 +19,7 @@ package net.pmarks.chromadoze;
 
 import android.os.Process;
 
-import edu.emory.mathcs.jtransforms.dct.FloatDCT_1D;
+import org.jtransforms.dct.FloatDCT_1D;
 
 class SampleGenerator {
     private final NoiseService mNoiseService;
