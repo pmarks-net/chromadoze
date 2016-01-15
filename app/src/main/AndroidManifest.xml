@@ -8,6 +8,7 @@
 
     <application
         android:allowBackup="true"
+        android:backupAgent="TheBackupAgent"
         android:icon="@drawable/chromadoze_icon"
         android:label="@string/app_name"
         android:theme="@style/Theme.ChromaDozeTheme">
@@ -28,5 +29,8 @@
         </receiver>
 
         <service android:name=".NoiseService" />
+        <meta-data
+            android:name="com.google.android.backup.api_key"
+            android:value="AEdPqrEAAAAISXaOEWnqsGHIpO7oONbmE9wULxVx_vswtaPpGA" />
     </application>
 </manifest>

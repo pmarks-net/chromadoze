@@ -17,6 +17,7 @@
 
 package net.pmarks.chromadoze;
 
+import android.app.backup.BackupManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.PorterDuff.Mode;
@@ -28,7 +29,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -43,7 +44,7 @@ import android.widget.Spinner;
 
 import java.util.Date;
 
-public class ChromaDoze extends ActionBarActivity implements
+public class ChromaDoze extends AppCompatActivity implements
         NoiseService.PercentListener, UIState.LockListener, OnItemSelectedListener {
     private static final int MENU_PLAY_STOP = 1;
     private static final int MENU_LOCK = 2;
@@ -56,6 +57,9 @@ public class ChromaDoze extends ActionBarActivity implements
 
     private boolean mServiceActive;
 
+    // The name to use when accessing our SharedPreferences.
+    public static final String PREF_NAME = "ChromaDoze";
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,7 +67,7 @@ public class ChromaDoze extends ActionBarActivity implements
 
         mUiState = new UIState(getApplication());
 
-        SharedPreferences pref = getPreferences(MODE_PRIVATE);
+        SharedPreferences pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         mUiState.loadState(pref);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -120,10 +124,11 @@ public class ChromaDoze extends ActionBarActivity implements
             NoiseService.stopNow(getApplication(), R.string.stop_reason_silent);
         }
 
-        SharedPreferences.Editor pref = getPreferences(MODE_PRIVATE).edit();
+        SharedPreferences.Editor pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
         pref.clear();
         mUiState.saveState(pref);
         pref.commit();
+        new BackupManager(this).dataChanged();
 
         // Stop receiving progress events.
         NoiseService.removePercentListener(this);
