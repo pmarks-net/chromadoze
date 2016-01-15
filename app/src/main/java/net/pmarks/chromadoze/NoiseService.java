@@ -29,7 +29,6 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -38,7 +37,6 @@ import android.widget.TextView;
 
 import junit.framework.Assert;
 
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 

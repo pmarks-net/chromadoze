@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -171,9 +172,8 @@ public class ChromaDoze extends AppCompatActivity implements
 
     // Get the lock icon which reflects the current action.
     private Drawable getLockIcon() {
-        Drawable d = getResources().getDrawable(
-                mUiState.getLocked() ? R.drawable.action_unlock
-                        : R.drawable.action_lock);
+        Drawable d = ContextCompat.getDrawable(this, mUiState.getLocked() ?
+                R.drawable.action_unlock : R.drawable.action_lock);
         if (mUiState.getLockBusy()) {
             d.setColorFilter(0xFFFF4444, Mode.SRC_IN);
         } else {
@@ -233,7 +233,7 @@ public class ChromaDoze extends AppCompatActivity implements
         if (allowBack) {
             transaction.addToBackStack(null);
             transaction
-                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+                    .setTransition(FragmentTransaction.TRANSIT_NONE);
         }
         transaction.commit();
     }
@@ -308,7 +308,7 @@ public class ChromaDoze extends AppCompatActivity implements
     }
 
     private Drawable getScaledImage(int resource, int size) {
-        Bitmap b = ((BitmapDrawable) getResources().getDrawable(resource)).getBitmap();
+        Bitmap b = ((BitmapDrawable) ContextCompat.getDrawable(this, resource)).getBitmap();
         Bitmap bitmapResized = Bitmap.createScaledBitmap(b, size, size, true);
         return new BitmapDrawable(getResources(), bitmapResized);
     }
