@@ -82,7 +82,7 @@ public class ChromaDoze extends AppCompatActivity implements
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 actionBar.getThemedContext(), R.layout.spinner_title,
                 FragmentIndex.getStrings(this));
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown);
+        adapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
         mNavSpinner.setAdapter(adapter);
         mNavSpinner.setOnItemSelectedListener(this);
 
