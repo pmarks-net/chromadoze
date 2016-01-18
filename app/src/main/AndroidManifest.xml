@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.pmarks.chromadoze"
-    android:versionCode="20"
-    android:versionName="3.5.3">
+    android:versionCode="21"
+    android:versionName="3.5.4">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Note: When allowBackup is enabled, Android 6.0 will randomly kill the
+         service after a few hours.  The alternative is to stay on
+         targetSdkVersion 22, but the upgrade/downgrade caused the Play store
+         to fail with (Error code: -504),  So my hands are tied, and disabling
+         backup is the only solution I can find. -->
     <application
-        android:allowBackup="true"
-        android:backupAgent="TheBackupAgent"
+        android:allowBackup="false"
         android:icon="@drawable/chromadoze_icon"
         android:label="@string/app_name"
         android:theme="@style/Theme.ChromaDozeTheme">
@@ -29,8 +33,5 @@
         </receiver>
 
         <service android:name=".NoiseService" />
-        <meta-data
-            android:name="com.google.android.backup.api_key"
-            android:value="AEdPqrEAAAAISXaOEWnqsGHIpO7oONbmE9wULxVx_vswtaPpGA" />
     </application>
 </manifest>

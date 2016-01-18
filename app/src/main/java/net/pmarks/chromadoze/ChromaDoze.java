@@ -17,7 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import android.app.backup.BackupManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.PorterDuff.Mode;
@@ -129,7 +128,6 @@ public class ChromaDoze extends AppCompatActivity implements
         pref.clear();
         mUiState.saveState(pref);
         pref.commit();
-        new BackupManager(this).dataChanged();
 
         // Stop receiving progress events.
         NoiseService.removePercentListener(this);
