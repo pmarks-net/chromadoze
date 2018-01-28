@@ -23,6 +23,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -30,9 +32,17 @@ import android.view.MotionEvent;
 public class EqualizerView extends android.view.View implements UIState.LockListener {
     private static final int BAND_COUNT = SpectrumData.BAND_COUNT;
 
-    private final Paint mBarColor[] = new Paint[BAND_COUNT];
-    private final Paint mBaseColor[] = new Paint[4];
-    private final Paint mWhite = new Paint();
+    // 3D projection offsets (multiple of mBarWidth)
+    private static final float PROJECT_X = 0.4f;
+    private static final float PROJECT_Y = -0.25f;
+
+    // L=light, M=medium, D=dark
+    private final Paint mBarColorL[] = new Paint[BAND_COUNT];
+    private final Paint mBarColorM[] = new Paint[BAND_COUNT];
+    private final Paint mBarColorD[] = new Paint[BAND_COUNT];
+    private final Paint mBaseColorL[] = new Paint[4];
+    private final Paint mBaseColorM[] = new Paint[4];
+    private final Paint mBaseColorD[] = new Paint[4];
 
     private UIState mUiState;
 
@@ -41,8 +51,16 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     private float mBarWidth;
     private float mZeroLineY;
 
+    private Path mCubeTop;
+    private Path mCubeSide;
+
     public EqualizerView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // On the Nexus S, hardware acceleration breaks Path.offset(),
+            // and it seems unnecessary for our tiny polygons.
+            setLayerType(LAYER_TYPE_SOFTWARE, null);
+        }
         makeColors();
     }
 
@@ -57,40 +75,77 @@ public class EqualizerView extends android.view.View implements UIState.LockList
             Paint p = new Paint();
             int x = (bmp.getWidth() - 1) * i / (BAND_COUNT - 1);
             p.setColor(bmp.getPixel(x, 0));
-            mBarColor[i] = p;
+            mBarColorL[i] = p;
         }
+        darken(0.7f, mBarColorL, mBarColorM);
+        darken(0.5f, mBarColorL, mBarColorD);
 
         int i = 0;
         for (int v : new int[]{100, 75, 55, 50}) {
             Paint p = new Paint();
             p.setColor(Color.rgb(v, v, v));
-            mBaseColor[i++] = p;
+            mBaseColorL[i++] = p;
         }
+        darken(0.7f, mBaseColorL, mBaseColorM);
+        darken(0.5f, mBaseColorL, mBaseColorD);
+    }
 
-        mWhite.setColor(Color.WHITE);
+    private void darken(float mult, Paint[] src, Paint[] dst) {
+        if (src.length != dst.length) {
+            throw new IllegalArgumentException("length mismatch");
+        }
+        for (int i = 0; i < src.length; i++) {
+            int color = src[i].getColor();
+            int r = (int) (Color.red(color) * mult);
+            int g = (int) (Color.green(color) * mult);
+            int b = (int) (Color.blue(color) * mult);
+            Paint p = new Paint(src[i]);
+            p.setColor(Color.argb(Color.alpha(color), r, g, b));
+            dst[i] = p;
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         final Phonon ph = mUiState != null ? mUiState.getPhonon() : null;
         final boolean isLocked = mUiState != null ? mUiState.getLocked() : false;
+        final Path p = new Path();
+
         for (int i = 0; i < BAND_COUNT; i++) {
             float bar = ph != null ? ph.getBar(i) : .5f;
-            float startX = mBarWidth * i;
+            float startX = bandToX(i);
             float stopX = startX + mBarWidth;
             float startY = barToY(bar);
             float midY = startY + mBarWidth;
 
-            if (bar > 0) {
-                canvas.drawRect(startX, startY, stopX, midY, mBarColor[i]);
-            }
-
             // Lower the brightness and contrast when locked.
-            canvas.drawRect(startX, midY, stopX, mHeight,
-                    mBaseColor[i % 2 + (isLocked ? 2 : 0)]);
-        }
+            int baseCol = i % 2 + (isLocked ? 2 : 0);
 
-        canvas.drawLine(0, mZeroLineY, mWidth, mZeroLineY, mWhite);
+            // Bar right (the top-left corner of this rectangle will be clipped.)
+            float projX = mBarWidth * PROJECT_X;
+            float projY = mBarWidth * PROJECT_Y;
+            canvas.drawRect(stopX, midY + projY,stopX + projX, mHeight, mBaseColorD[baseCol]);
+
+            // Bar front
+            canvas.drawRect(startX, midY, stopX, mHeight, mBaseColorL[baseCol]);
+
+            if (bar > 0) {
+                // Cube right
+                mCubeSide.offset(stopX, startY, p);
+                canvas.drawPath(p, mBarColorD[i]);
+
+                // Cube top
+                mCubeTop.offset(startX, startY, p);
+                canvas.drawPath(p, mBarColorM[i]);
+
+                // Cube front
+                canvas.drawRect(startX, startY, stopX, midY, mBarColorL[i]);
+            } else {
+                // Bar top
+                mCubeTop.offset(startX, midY, p);
+                canvas.drawPath(p, mBaseColorM[baseCol]);
+            }
+        }
     }
 
     private float mLastX;
@@ -140,8 +195,30 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         mWidth = getWidth();
         mHeight = getHeight();
-        mBarWidth = mWidth / BAND_COUNT;
+        mBarWidth = mWidth / (BAND_COUNT + 2);
         mZeroLineY = mHeight * .9f;
+        mCubeTop = projectCube(mBarWidth, true);
+        mCubeSide = projectCube(mBarWidth, false);
+    }
+
+    // Draw the top or right side of a cube.
+    private static Path projectCube(float unit, boolean isTop) {
+        float projX = unit * PROJECT_X;
+        float projY = unit * PROJECT_Y;
+        Path p = new Path();
+        p.moveTo(0, 0);
+        p.lineTo(projX, projY);
+        if (isTop) {
+            // Top
+            p.lineTo(unit + projX, projY);
+            p.lineTo(unit, 0);
+        } else {
+            // Side
+            p.lineTo(projX, unit + projY);
+            p.lineTo(0, unit);
+        }
+        p.close();
+        return p;
     }
 
     private float yToBar(float y) {
@@ -159,8 +236,16 @@ public class EqualizerView extends android.view.View implements UIState.LockList
         return (1f - barHeight) * (mZeroLineY - mBarWidth);
     }
 
-    private int getBarIndex(float x) {
-        int out = (int) (x / mBarWidth);
+    // Accepts 0 <= barIndex < BAND_COUNT,
+    // leaving a 1-bar gap on each side of the screen.
+    private float bandToX(int barIndex) {
+        return mBarWidth * (barIndex + 1);
+    }
+
+    // Returns 0 <= out < BAND_COUNT,
+    // leaving a 1-bar gap on each side of the screen.
+    private int xToBand(float x) {
+        int out = ((int) (x / mBarWidth)) - 1;
         if (out < 0) {
             out = 0;
         }
@@ -168,6 +253,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
             out = BAND_COUNT - 1;
         }
         return out;
+
     }
 
     // Starting bar?
@@ -188,15 +274,12 @@ public class EqualizerView extends android.view.View implements UIState.LockList
         float startY = mLastY;
         mLastX = stopX;
         mLastY = stopY;
-        int startBand = getBarIndex(startX);
-        int stopBand = getBarIndex(stopX);
+        int startBand = xToBand(startX);
+        int stopBand = xToBand(stopX);
         int direction = stopBand > startBand ? 1 : -1;
         for (int i = startBand; i != stopBand; i += direction) {
             // Get the x-coordinate where we exited band i.
-            float exitX = i * mBarWidth;
-            if (direction > 0) {
-                exitX += mBarWidth;
-            }
+            float exitX = bandToX(direction < 0 ? i : i + 1);
 
             // Get the Y value at exitX.
             float slope = (stopY - startY) / (stopX - startX);
