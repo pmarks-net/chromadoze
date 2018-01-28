@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.pmarks.chromadoze"
     android:versionCode="23"
-    android:versionName="3.6-git">
+    android:versionName="3.6">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
