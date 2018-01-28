@@ -91,13 +91,7 @@ class SampleShuffler {
 
     public SampleShuffler(AudioParams params) {
         mParams = params;
-
-        // Start playing silence until real data arrives.
-        mGlobalVolumeFactor = 0;
-        exchangeChunk(withPcm(new AudioChunk(new float[FADE_LEN * 2])), true);
-
         mPlaybackThread = new PlaybackThread();
-        mPlaybackThread.start();
     }
 
     public void stopThread() {
@@ -394,6 +388,13 @@ class SampleShuffler {
         mAudioChunks.add(chunk);
         mShuffleBag.clear();
         mShuffleBag.put(0, chunk.neverPlayed());
+
+        // Begin playback when the first chunk arrives.
+        // The fade-in effect makes mAlternateFuture unnecessary.
+        if (oldChunks == null) {
+            mPlaybackThread.start();
+        }
+
         return oldChunks;
     }
 
@@ -475,6 +476,11 @@ class SampleShuffler {
         public static final int SINE_PERIOD = 1 << 30;
         public static final int SINE_STRETCH = SINE_PERIOD / (4 * SINE_LEN);
 
+        // Quietest point on the sine wave (3π/2)
+        public static final int QUIET_POS = (int) (SINE_PERIOD * .75);
+        // Loudest point on the sine wave (π/2)
+        public static final int LOUD_POS = (int) (SINE_PERIOD * .25);
+
         // The minimum amplitude, from [0,1]
         public final float mMinVol;
         // The wave period, in seconds.
@@ -485,10 +491,10 @@ class SampleShuffler {
         // stored as [0, 32767].
         private final short mTweakedSine[];
 
-        private int mPos = (int) (SINE_PERIOD * .75);  // Quietest point.
+        private int mPos = QUIET_POS;
         private final int mSpeed;
 
-        public AmpWave(float minVol, float period) {
+        public AmpWave(float minVol, float period /* seconds */) {
             if (minVol > .999f || period < .001f) {
                 mTweakedSine = null;
                 mSpeed = 0;
@@ -522,20 +528,25 @@ class SampleShuffler {
 
         // Apply the amplitude wave to this audio buffer.
         // It's only safe to call this from the playback thread.
-        public void mutateBuffer(short buf[]) {
+        // Returns true if stopAtLoud reached its target.
+        public boolean mutateBuffer(short buf[], boolean stopAtLoud) {
             if (mTweakedSine == null) {
-                return;
+                return false;
             }
             int outPos = 0;
             while (outPos < buf.length) {
+                if (stopAtLoud && LOUD_POS <= mPos && mPos < QUIET_POS) {
+                    return true;  // Reached 100% volume.
+                }
                 // Multiply by [0, 1) using integer math.
                 final short mult = mTweakedSine[mPos / SINE_STRETCH];
                 mPos = (mPos + mSpeed) & (SINE_PERIOD - 1);
-                for (int chan = 0; chan < 2; chan++) {
+                for (int chan = 0; chan < AudioParams.SHORTS_PER_SAMPLE; chan++) {
                     buf[outPos] = (short) ((buf[outPos] * mult) >> 15);
                     outPos++;
                 }
             }
+            return false;
         }
     }
 
@@ -623,6 +634,9 @@ class SampleShuffler {
                 return;
             }
 
+            // Apply a fade-in effect on startup (half-period = 1sec)
+            AmpWave fadeIn = new AmpWave(0, 2);
+
             // Aim to write half of the AudioTrack's buffer per iteration,
             // but FADE_LEN is the bare minimum to avoid errors.
             final short[] buf = new short[Math.max(mParams.BUF_SAMPLES / 2, FADE_LEN) *
@@ -632,8 +646,11 @@ class SampleShuffler {
             do {
                 AmpWave newAmpWave = fillBuffer(buf);
                 newAmpWave.copyOldPosition(oldAmpWave);
-                newAmpWave.mutateBuffer(buf);
+                newAmpWave.mutateBuffer(buf, false);
                 oldAmpWave = newAmpWave;
+                if (fadeIn != null && fadeIn.mutateBuffer(buf, true)) {
+                    fadeIn = null;
+                }
                 // AudioTrack will write everything, unless it's been stopped.
                 result = mTrack.write(buf, 0, buf.length);
             } while (result == buf.length);
