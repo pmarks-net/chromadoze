@@ -45,8 +45,9 @@ individual streams below 32767 / sqrt(2), or ~23170.
 
 class SampleShuffler {
     // These lengths are measured in samples.
-    private static final int SINE_LEN = 1 << 9;
-    private static final int FADE_LEN = SINE_LEN + 1;
+    private static final int SINE_LEN = 1 << 12;
+    // FADE_LEN follows the "interior", excluding 0 or 1 values.
+    private static final int FADE_LEN = SINE_LEN - 1;
     private static final float BASE_AMPLITUDE = 20000;
     private static final float CLIP_AMPLITUDE = 23000;  // 32K/sqrt(2)
 
@@ -232,8 +233,8 @@ class SampleShuffler {
             }
             mPcmData = new short[len];
             for (int i = 0; i < FADE_LEN; i++) {
-                // Fade in using sin(x), x=[0,pi/2]
-                float fadeFactor = SINE[i];
+                // Fade in using sin(x), x=(0,pi/2)
+                float fadeFactor = SINE[i + 1];
                 mPcmData[i] = (short) (mFloatData[i] * volumeFactor * fadeFactor);
             }
             for (int i = FADE_LEN; i < len - FADE_LEN; i++) {
@@ -241,8 +242,8 @@ class SampleShuffler {
             }
             for (int i = len - FADE_LEN; i < len; i++) {
                 int j = i - (len - FADE_LEN);
-                // Fade out using cos(x), x=[0,pi/2]
-                float fadeFactor = SINE[SINE_LEN + j];
+                // Fade out using cos(x), x=(0,pi/2)
+                float fadeFactor = SINE[SINE_LEN + j + 1];
                 mPcmData[i] = (short) (mFloatData[i] * volumeFactor * fadeFactor);
             }
         }
@@ -455,10 +456,10 @@ class SampleShuffler {
             // precomputed.  Also, this might result in clipping if the inputs
             // happen to be in the middle of a crossfade already.
             outPos = 0;
-            for (int i = 0; i < FADE_LEN; i++) {
+            for (int i = 1; i <= FADE_LEN; i++) {
                 for (int chan = 0; chan < 2; chan++) {
                     float sample = (mAlternateFuture[outPos] * SINE[SINE_LEN + i] +
-                            out[outPos] * SINE[i]);
+                                    out[outPos] * SINE[i]);
                     if (sample > 32767f) sample = 32767f;
                     if (sample < -32767f) sample = -32767f;
                     out[outPos++] = (short) sample;
