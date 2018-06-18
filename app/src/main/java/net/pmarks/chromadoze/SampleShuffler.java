@@ -456,7 +456,8 @@ class SampleShuffler {
             // precomputed.  Also, this might result in clipping if the inputs
             // happen to be in the middle of a crossfade already.
             outPos = 0;
-            for (int i = 1; i <= FADE_LEN; i++) {
+            // Note: changed i++ to i+=8, for scrubbing latency of ~10ms.
+            for (int i = 1; i <= FADE_LEN; i += 8) {
                 for (int chan = 0; chan < 2; chan++) {
                     float sample = (mAlternateFuture[outPos] * SINE[SINE_LEN + i] +
                                     out[outPos] * SINE[i]);

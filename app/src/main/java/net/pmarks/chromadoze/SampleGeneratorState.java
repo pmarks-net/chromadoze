@@ -89,4 +89,13 @@ class SampleGeneratorState {
     public int getChunkSize() {
         return mChunkNumber < N_SMALL_CHUNKS ? SMALL_CHUNK_SIZE : LARGE_CHUNK_SIZE;
     }
+
+    // For the first couple large chunks, returns 75% of the chunk duration.
+    public long getSleepTargetMs(int sampleRate) {
+        final int i = mChunkNumber - N_SMALL_CHUNKS;
+        if (0 <= i && i < 2) {
+            return 750 * LARGE_CHUNK_SIZE / sampleRate;
+        }
+        return 0;
+    }
 }

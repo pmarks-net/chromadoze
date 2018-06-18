@@ -18,6 +18,7 @@
 package net.pmarks.chromadoze;
 
 import android.os.Process;
+import android.os.SystemClock;
 
 import org.jtransforms.dct.FloatDCT_1D;
 
@@ -76,22 +77,24 @@ class SampleGenerator {
         // Chunk-making progress:
         final SampleGeneratorState state = new SampleGeneratorState();
         SpectrumData spectrum = null;
+        long waitMs = -1;
 
         while (true) {
             // This does one of 3 things:
             // - Throw StopException if stopThread() was called.
             // - Check if a new spectrum is waiting.
             // - Block if there's no work to do.
-            final boolean doWait = state.done();
-            final SpectrumData newSpectrum = popPendingSpectrum(doWait);
+            final SpectrumData newSpectrum = popPendingSpectrum(waitMs);
             if (newSpectrum != null && !newSpectrum.sameSpectrum(spectrum)) {
                 spectrum = newSpectrum;
                 state.reset();
                 mNoiseService.updatePercentAsync(state.getPercent());
-            } else if (doWait) {
+            } else if (waitMs == -1) {
                 // Nothing changed.  Keep waiting.
                 continue;
             }
+
+            final long startMs = SystemClock.elapsedRealtime();
 
             // Generate the next chunk of sound.
             float[] dctData = doIDCT(state.getChunkSize(), spectrum);
@@ -101,20 +104,34 @@ class SampleGenerator {
                 mNoiseService.updatePercentAsync(state.getPercent());
             }
 
+            // Avoid burning the CPU while the user is scrubbing.  For the
+            // first couple large chunks, the next chunk should be ready
+            // when this one is ~75% finished playing.
+            final long sleepTargetMs = state.getSleepTargetMs(mParams.SAMPLE_RATE);
+            final long elapsedMs = SystemClock.elapsedRealtime() - startMs;
+            waitMs = sleepTargetMs - elapsedMs;
+            if (waitMs < 0) waitMs = 0;
+            if (waitMs > sleepTargetMs) waitMs = sleepTargetMs;
+
             if (state.done()) {
                 // No chunks left; save RAM.
                 mDct = null;
                 mLastDctSize = -1;
+                waitMs = -1;
             }
         }
     }
 
-    private synchronized SpectrumData popPendingSpectrum(boolean doWait)
+    private synchronized SpectrumData popPendingSpectrum(long waitMs)
             throws StopException {
-        if (doWait && !mStopping && mPendingSpectrum == null) {
+        if (waitMs != 0 && !mStopping && mPendingSpectrum == null) {
             // Wait once.  The retry loop is in the caller.
             try {
-                wait();
+                if (waitMs < 0) {
+                    wait(/*forever*/);
+                } else {
+                    wait(waitMs);
+                }
             } catch (InterruptedException e) {
             }
         }
