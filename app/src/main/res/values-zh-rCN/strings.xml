@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Chroma Doze</string>
+    <string name="notification_text">点击这里打开本应用</string>
+    <string name="about_menu">关于</string>
+    <string name="options">选项</string>
+    <string name="generating">正在生成反离散余弦变换区块：</string>
+    <string name="play_stop">播放/暂停</string>
+    <string name="lock_unlock">锁定/取消锁定</string>
+    <string name="memory">存档</string>
+    <string name="unsaved">（未保存）</string>
+    <string name="stop_reason_autoplay">已通过自动播放选项停止播放</string>
+    <string name="stop_reason_audiofocus">因失去音频焦点停止播放</string>
+    <string name="stop_reason_notification">已通过通知栏按钮停止</string>
+    <string name="stop_reason_toolbar">已通过工具栏按钮停止</string>
+    <string name="stop_reason_mediabutton">已通过媒体按钮停止播放</string>
+    <string name="stop_reason_silent">Exited while silent</string>
+    <string name="stop_reason_mysterious">不知怎么的就停止播放了</string>
+    <string name="stop_reason_restarted">Restarted by the OS</string>
+</resources>
+
