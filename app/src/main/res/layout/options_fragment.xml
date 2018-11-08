@@ -13,8 +13,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingBottom="10dp"
             android:paddingTop="3dp"
+            android:paddingBottom="10dp"
             android:text="Amplitude Wave"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
@@ -31,6 +31,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
+                    android:paddingEnd="5dp"
                     android:paddingRight="5dp"
                     android:src="@drawable/wave_amplitude" />
 
@@ -74,6 +75,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
+                    android:paddingEnd="5dp"
                     android:paddingRight="5dp"
                     android:src="@drawable/wave_period" />
 
@@ -97,13 +99,15 @@
         <View
             android:layout_width="fill_parent"
             android:layout_height="2dp"
-            android:background="#555"></View>
+            android:background="#555">
+
+        </View>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingBottom="10dp"
             android:paddingTop="8dp"
+            android:paddingBottom="10dp"
             android:text="Advanced Options"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
@@ -111,24 +115,24 @@
             android:id="@+id/AutoPlayCheck"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="8dp"
             android:paddingTop="8dp"
-            android:text="Play Automatically on Open" />
+            android:paddingBottom="8dp"
+            android:text="Play automatically on open" />
 
         <android.support.v7.widget.SwitchCompat
             android:id="@+id/IgnoreAudioFocusCheck"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="8dp"
             android:paddingTop="8dp"
-            android:text="Ignore Audio Focus\n(Keep playing over other apps)" />
+            android:paddingBottom="8dp"
+            android:text="Ignore audio focus\n(keep playing over other apps)" />
 
         <android.support.v7.widget.SwitchCompat
             android:id="@+id/VolumeLimitCheck"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="8dp"
             android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:text="Reduce Volume" />
 
         <SeekBar
