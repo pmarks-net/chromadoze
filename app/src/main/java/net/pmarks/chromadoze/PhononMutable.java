@@ -280,5 +280,4 @@ public class PhononMutable implements Phonon {
                 mPeriod == o.mPeriod &&
                 Arrays.equals(mBars, o.mBars));
     }
-
 }

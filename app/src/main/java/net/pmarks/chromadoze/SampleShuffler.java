@@ -108,11 +108,11 @@ class SampleShuffler {
     }
 
     public interface VolumeListener {
-        public enum DuckLevel {SILENT, DUCK, NORMAL}
+        enum DuckLevel {SILENT, DUCK, NORMAL}
 
-        public void setDuckLevel(DuckLevel d);
+        void setDuckLevel(DuckLevel d);
 
-        public void setVolumeLevel(float v);  // Range is 0..1
+        void setVolumeLevel(float v);  // Range is 0..1
     }
 
     public VolumeListener getVolumeListener() {
@@ -450,7 +450,7 @@ class SampleShuffler {
         }
 
         if (mAlternateFuture != null) {
-            // This means that the spectrum was abruptly changed.  Crossfade
+            // This means that the spectrum was abruptly changed. Crossfade
             // from old to new, to avoid pops.  This is more CPU-intensive
             // than fading between two chunks, because the envelopes aren't
             // precomputed.  Also, this might result in clipping if the inputs
@@ -460,7 +460,7 @@ class SampleShuffler {
             for (int i = 1; i <= FADE_LEN; i += 8) {
                 for (int chan = 0; chan < 2; chan++) {
                     float sample = (mAlternateFuture[outPos] * SINE[SINE_LEN + i] +
-                                    out[outPos] * SINE[i]);
+                            out[outPos] * SINE[i]);
                     if (sample > 32767f) sample = 32767f;
                     if (sample < -32767f) sample = -32767f;
                     out[outPos++] = (short) sample;

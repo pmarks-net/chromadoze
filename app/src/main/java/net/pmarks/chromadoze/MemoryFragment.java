@@ -21,7 +21,6 @@ import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -52,17 +51,14 @@ public class MemoryFragment extends ListFragment implements
 
         View v = inflater.inflate(R.layout.memory_list_item_top, null);
         View button = v.findViewById(R.id.save_button);
-        button.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View arg0) {
-                // Clicked the "Save" button.
-                final Phonon ph = mUiState.mScratchPhonon.makeMutableCopy();
-                mAdapter.insert(ph, 0);
-                // Gray out the header row.
-                setScratchPosAndDraw(findScratchCopy());
-                // Fake-click the header row.
-                onItemClick(null, null, 0, 0);
-            }
+        button.setOnClickListener(arg0 -> {
+            // Clicked the "Save" button.
+            final Phonon ph = mUiState.mScratchPhonon.makeMutableCopy();
+            mAdapter.insert(ph, 0);
+            // Gray out the header row.
+            setScratchPosAndDraw(findScratchCopy());
+            // Fake-click the header row.
+            onItemClick(null, null, 0, 0);
         });
         mHeaderView = v;
         mDslv.addHeaderView(mHeaderView, null, true);
@@ -114,7 +110,7 @@ public class MemoryFragment extends ListFragment implements
     }
 
     private void moveTrackedPositions(int from, int to, Phonon deleted) {
-        if ((to == TrackedPosition.NOWHERE) != (deleted != null)) {
+        if ((to == TrackedPosition.NOWHERE) == (deleted == null)) {
             throw new IllegalArgumentException();
         }
         try {

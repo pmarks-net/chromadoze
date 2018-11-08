@@ -46,7 +46,6 @@ public class EqualizerView extends android.view.View implements UIState.LockList
 
     private UIState mUiState;
 
-    private float mWidth;
     private float mHeight;
     private float mBarWidth;
     private float mZeroLineY;
@@ -56,11 +55,9 @@ public class EqualizerView extends android.view.View implements UIState.LockList
 
     public EqualizerView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // On the Nexus S, hardware acceleration breaks Path.offset(),
-            // and it seems unnecessary for our tiny polygons.
-            setLayerType(LAYER_TYPE_SOFTWARE, null);
-        }
+        // On the Nexus S, hardware acceleration breaks Path.offset(),
+        // and it seems unnecessary for our tiny polygons.
+        setLayerType(LAYER_TYPE_SOFTWARE, null);
         makeColors();
     }
 
@@ -108,7 +105,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     @Override
     protected void onDraw(Canvas canvas) {
         final Phonon ph = mUiState != null ? mUiState.getPhonon() : null;
-        final boolean isLocked = mUiState != null ? mUiState.getLocked() : false;
+        final boolean isLocked = mUiState != null && mUiState.getLocked();
         final Path p = new Path();
 
         for (int i = 0; i < BAND_COUNT; i++) {
@@ -124,7 +121,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
             // Bar right (the top-left corner of this rectangle will be clipped.)
             float projX = mBarWidth * PROJECT_X;
             float projY = mBarWidth * PROJECT_Y;
-            canvas.drawRect(stopX, midY + projY,stopX + projX, mHeight, mBaseColorD[baseCol]);
+            canvas.drawRect(stopX, midY + projY, stopX + projX, mHeight, mBaseColorD[baseCol]);
 
             // Bar front
             canvas.drawRect(startX, midY, stopX, mHeight, mBaseColorL[baseCol]);
@@ -193,7 +190,7 @@ public class EqualizerView extends android.view.View implements UIState.LockList
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        mWidth = getWidth();
+        float mWidth = getWidth();
         mHeight = getHeight();
         mBarWidth = mWidth / (BAND_COUNT + 2);
         mZeroLineY = mHeight * .9f;

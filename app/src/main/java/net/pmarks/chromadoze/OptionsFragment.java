@@ -45,16 +45,16 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.options_fragment, container, false);
 
-        mMinVolSeek = (SeekBar) v.findViewById(R.id.MinVolSeek);
-        mMinVolText = (TextView) v.findViewById(R.id.MinVolText);
-        mPeriodSeek = (SeekBar) v.findViewById(R.id.PeriodSeek);
-        mPeriodText = (TextView) v.findViewById(R.id.PeriodText);
+        mMinVolSeek = v.findViewById(R.id.MinVolSeek);
+        mMinVolText = v.findViewById(R.id.MinVolText);
+        mPeriodSeek = v.findViewById(R.id.PeriodSeek);
+        mPeriodText = v.findViewById(R.id.PeriodText);
 
-        mAutoPlayCheck = (SwitchCompat) v.findViewById(R.id.AutoPlayCheck);
+        mAutoPlayCheck = v.findViewById(R.id.AutoPlayCheck);
 
-        mIgnoreAudioFocusCheck = (SwitchCompat) v.findViewById(R.id.IgnoreAudioFocusCheck);
-        mVolumeLimitCheck = (SwitchCompat) v.findViewById(R.id.VolumeLimitCheck);
-        mVolumeLimitSeek = (SeekBar) v.findViewById(R.id.VolumeLimitSeek);
+        mIgnoreAudioFocusCheck = v.findViewById(R.id.IgnoreAudioFocusCheck);
+        mVolumeLimitCheck = v.findViewById(R.id.VolumeLimitCheck);
+        mVolumeLimitSeek = v.findViewById(R.id.VolumeLimitSeek);
 
         return v;
     }

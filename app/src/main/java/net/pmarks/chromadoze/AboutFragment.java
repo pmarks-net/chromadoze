@@ -42,7 +42,7 @@ public class AboutFragment extends Fragment {
         }
 
         // Evaluate the format string in VersionText.
-        TextView versionText = (TextView) v.findViewById(R.id.VersionText);
+        TextView versionText = v.findViewById(R.id.VersionText);
         String versionFormat = versionText.getText().toString();
         versionText.setText(String.format(versionFormat, pinfo.versionName));
 
@@ -54,5 +54,4 @@ public class AboutFragment extends Fragment {
         super.onResume();
         ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_ABOUT);
     }
-
 }

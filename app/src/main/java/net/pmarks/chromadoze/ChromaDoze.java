@@ -71,14 +71,14 @@ public class ChromaDoze extends AppCompatActivity implements
         SharedPreferences pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         mUiState.loadState(pref);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setTitle("");
 
-        mNavSpinner = (Spinner) findViewById(R.id.nav_spinner);
+        mNavSpinner = findViewById(R.id.nav_spinner);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 actionBar.getThemedContext(), R.layout.spinner_title,
                 FragmentIndex.getStrings(this));
@@ -128,7 +128,7 @@ public class ChromaDoze extends AppCompatActivity implements
         SharedPreferences.Editor pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
         pref.clear();
         mUiState.saveState(pref);
-        pref.commit();
+        pref.apply();
         new BackupManager(this).dataChanged();
 
         // Stop receiving progress events.
@@ -299,7 +299,6 @@ public class ChromaDoze extends AppCompatActivity implements
                 return;
             case FragmentIndex.ID_ABOUT:
                 changeFragment(new AboutFragment(), true);
-                return;
         }
     }
 

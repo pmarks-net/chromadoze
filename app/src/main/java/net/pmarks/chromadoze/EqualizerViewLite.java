@@ -64,7 +64,7 @@ public class EqualizerViewLite extends View {
         whitePaint.setColor(Color.WHITE);
         whitePaint.setAlpha(isEnabled() ? 250 : 94);
         whitePaint.setStyle(Paint.Style.STROKE);
-        whitePaint.setStrokeWidth(dpToPixels(3));
+        whitePaint.setStrokeWidth(dpToPixels());
 
         Path path = new Path();
         boolean first = true;
@@ -113,10 +113,10 @@ public class EqualizerViewLite extends View {
         return (1f - barHeight) * mHeight;
     }
 
-    private float dpToPixels(float dp) {
+    private float dpToPixels() {
         Resources r = getResources();
         return TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, dp, r.getDisplayMetrics());
+                TypedValue.COMPLEX_UNIT_DIP, (float) 3, r.getDisplayMetrics());
     }
 
     @Override

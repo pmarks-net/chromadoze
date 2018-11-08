@@ -39,9 +39,9 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.main_fragment, container, false);
 
-        mEqualizer = (EqualizerView) v.findViewById(R.id.EqualizerView);
-        mStateText = (TextView) v.findViewById(R.id.StateText);
-        mPercentBar = (ProgressBar) v.findViewById(R.id.PercentBar);
+        mEqualizer = v.findViewById(R.id.EqualizerView);
+        mStateText = v.findViewById(R.id.StateText);
+        mPercentBar = v.findViewById(R.id.PercentBar);
         return v;
     }
 

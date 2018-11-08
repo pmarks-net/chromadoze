@@ -74,7 +74,7 @@ public class TrackedPosition {
                 }
                 return true;
             }
-        } else if (from > mPos) {
+        } else {
             if (to <= mPos) {
                 mPos += 1;
                 if (mPos >= NOWHERE) {
@@ -82,8 +82,6 @@ public class TrackedPosition {
                 }
                 return true;
             }
-        } else {
-            throw new RuntimeException();
         }
         return false;
     }

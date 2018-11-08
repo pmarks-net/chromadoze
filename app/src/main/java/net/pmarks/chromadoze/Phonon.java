@@ -21,23 +21,23 @@ import android.content.Intent;
 
 // Read-only view of a PhononMutable
 public interface Phonon {
-    public String toJSON();
+    String toJSON();
 
-    public boolean isSilent();
+    boolean isSilent();
 
-    public float getBar(int band);
+    float getBar(int band);
 
-    public int getMinVol();
+    int getMinVol();
 
-    public String getMinVolText();
+    String getMinVolText();
 
-    public int getPeriod();
+    int getPeriod();
 
-    public String getPeriodText();
+    String getPeriodText();
 
-    public PhononMutable makeMutableCopy();
+    PhononMutable makeMutableCopy();
 
-    public void writeIntent(Intent intent);
+    void writeIntent(Intent intent);
 
-    public boolean fastEquals(Phonon other);
+    boolean fastEquals(Phonon other);
 }
