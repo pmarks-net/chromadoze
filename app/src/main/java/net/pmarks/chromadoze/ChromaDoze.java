@@ -93,7 +93,9 @@ public class ChromaDoze extends AppCompatActivity implements
             TypedValue tv = new TypedValue();
             getTheme().resolveAttribute(R.attr.actionBarSize, tv, true);
             int height = TypedValue.complexToDimensionPixelSize(tv.data, getResources().getDisplayMetrics());
-            mToolbarIcon = getScaledImage(R.drawable.chromadoze_icon, height * 2 / 3);
+            // This originally used a scaled-down launcher icon, but I don't feel like figuring
+            // out how to render R.mipmap.chromadoze_icon correctly.
+            mToolbarIcon = ContextCompat.getDrawable(this, R.drawable.toolbar_icon);
         }
 
         // When this Activity is first created, set up the initial fragment.
@@ -302,11 +304,5 @@ public class ChromaDoze extends AppCompatActivity implements
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
-    }
-
-    private Drawable getScaledImage(int resource, int size) {
-        Bitmap b = ((BitmapDrawable) ContextCompat.getDrawable(this, resource)).getBitmap();
-        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, size, size, true);
-        return new BitmapDrawable(getResources(), bitmapResized);
     }
 }
