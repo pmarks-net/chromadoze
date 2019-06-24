@@ -25,9 +25,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Build;
-import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+
+import androidx.annotation.NonNull;
 
 public class EqualizerView extends android.view.View implements UIState.LockListener {
     private static final int BAND_COUNT = SpectrumData.BAND_COUNT;
@@ -56,11 +57,6 @@ public class EqualizerView extends android.view.View implements UIState.LockList
 
     public EqualizerView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // On the Nexus S, hardware acceleration breaks Path.offset(),
-            // and it seems unnecessary for our tiny polygons.
-            setLayerType(LAYER_TYPE_SOFTWARE, null);
-        }
         makeColors();
     }
 

@@ -21,8 +21,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-import junit.framework.Assert;
-
 import java.util.ArrayList;
 
 public class UIState {
@@ -138,7 +136,7 @@ public class UIState {
     }
 
     public void setLockBusy(boolean busy) {
-        Assert.assertTrue(mLocked);
+        if (!mLocked) throw new AssertionError("Expected mLocked");
         if (mLockBusy != busy) {
             mLockBusy = busy;
             notifyLockListeners(LockListener.LockEvent.BUSY);
