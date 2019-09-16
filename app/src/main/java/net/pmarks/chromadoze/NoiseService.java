@@ -24,7 +24,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -37,7 +36,6 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -300,7 +298,12 @@ public class NoiseService extends Service {
     }
 
     public static void stopNow(Context ctx, int stopReasonId) {
-        ctx.startService(newStopIntent(ctx, stopReasonId));
+        try {
+            ctx.startService(newStopIntent(ctx, stopReasonId));
+        } catch (IllegalStateException e) {
+            // This can be triggered by running "adb shell input keyevent 86" when the app
+            // is not running.  We ignore it, because in that case there's nothing to stop.
+        }
     }
 
     private static void saveStopReason(int stopReasonId) {

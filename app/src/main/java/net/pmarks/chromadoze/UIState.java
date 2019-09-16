@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
+import androidx.core.content.ContextCompat;
+
 import java.util.ArrayList;
 
 public class UIState {
@@ -111,7 +113,7 @@ public class UIState {
         getPhonon().writeIntent(intent);
         intent.putExtra("volumeLimit", (float) getVolumeLimit() / MAX_VOLUME);
         intent.putExtra("ignoreAudioFocus", mIgnoreAudioFocus);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         mDirty = false;
     }
 
