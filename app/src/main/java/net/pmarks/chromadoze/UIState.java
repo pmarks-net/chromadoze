@@ -21,7 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-import junit.framework.Assert;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 
@@ -113,7 +113,7 @@ public class UIState {
         getPhonon().writeIntent(intent);
         intent.putExtra("volumeLimit", (float) getVolumeLimit() / MAX_VOLUME);
         intent.putExtra("ignoreAudioFocus", mIgnoreAudioFocus);
-        mContext.startService(intent);
+        ContextCompat.startForegroundService(mContext, intent);
         mDirty = false;
     }
 
@@ -138,7 +138,7 @@ public class UIState {
     }
 
     public void setLockBusy(boolean busy) {
-        Assert.assertTrue(mLocked);
+        if (!mLocked) throw new AssertionError("Expected mLocked");
         if (mLockBusy != busy) {
             mLockBusy = busy;
             notifyLockListeners(LockListener.LockEvent.BUSY);

@@ -24,14 +24,6 @@ import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -42,6 +34,15 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.Spinner;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.MenuItemCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import java.util.Date;
 
@@ -92,7 +93,9 @@ public class ChromaDoze extends AppCompatActivity implements
             TypedValue tv = new TypedValue();
             getTheme().resolveAttribute(R.attr.actionBarSize, tv, true);
             int height = TypedValue.complexToDimensionPixelSize(tv.data, getResources().getDisplayMetrics());
-            mToolbarIcon = getScaledImage(R.drawable.chromadoze_icon, height * 2 / 3);
+            // This originally used a scaled-down launcher icon, but I don't feel like figuring
+            // out how to render R.mipmap.chromadoze_icon correctly.
+            mToolbarIcon = ContextCompat.getDrawable(this, R.drawable.toolbar_icon);
         }
 
         // When this Activity is first created, set up the initial fragment.
@@ -138,16 +141,12 @@ public class ChromaDoze extends AppCompatActivity implements
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuItem mi;
-
-        mi = menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop));
-        MenuItemCompat
-                .setShowAsAction(mi, MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
+        menu.add(0, MENU_PLAY_STOP, 0, getString(R.string.play_stop)).setShowAsAction(
+                MenuItem.SHOW_AS_ACTION_ALWAYS);
 
         if (mFragmentId == FragmentIndex.ID_CHROMA_DOZE) {
-            mi = menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock));
-            MenuItemCompat.setShowAsAction(mi,
-                    MenuItemCompat.SHOW_AS_ACTION_ALWAYS);
+            menu.add(0, MENU_LOCK, 0, getString(R.string.lock_unlock)).setShowAsAction(
+                    MenuItem.SHOW_AS_ACTION_ALWAYS);
         }
 
         return super.onCreateOptionsMenu(menu);
@@ -305,11 +304,5 @@ public class ChromaDoze extends AppCompatActivity implements
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
-    }
-
-    private Drawable getScaledImage(int resource, int size) {
-        Bitmap b = ((BitmapDrawable) ContextCompat.getDrawable(this, resource)).getBitmap();
-        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, size, size, true);
-        return new BitmapDrawable(getResources(), bitmapResized);
     }
 }

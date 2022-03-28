@@ -18,24 +18,24 @@
 package net.pmarks.chromadoze;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
-import android.support.v4.app.NotificationCompat;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 
-import junit.framework.Assert;
+import androidx.core.app.NotificationCompat;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -59,6 +59,7 @@ public class NoiseService extends Service {
 
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
+    private static final String CHANNEL_ID = "chromadoze_default";
 
     private int lastStartId = -1;
 
@@ -67,7 +68,9 @@ public class NoiseService extends Service {
     private static class PercentHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            Assert.assertEquals(PERCENT_MSG, msg.what);
+            if (msg.what != PERCENT_MSG) {
+                throw new AssertionError("Unexpected message: " + msg.what);
+            }
             updatePercent(msg.arg1);
         }
     }
@@ -80,10 +83,24 @@ public class NoiseService extends Service {
         mSampleShuffler = new SampleShuffler(params);
         mSampleGenerator = new SampleGenerator(this, params, mSampleShuffler);
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChromaDoze Wake Lock");
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "chromadoze:NoiseService");
         mWakeLock.acquire();
 
-        startForeground(NOTIFY_ID, makeNotify());
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_LOW;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        startForeground(NOTIFY_ID, makeNotify(false));
 
         // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
         mAudioFocusHelper = new AudioFocusHelper(
@@ -158,37 +175,38 @@ public class NoiseService extends Service {
     }
 
     // Create an icon for the notification bar.
-    private Notification makeNotify() {
-        // android:launchMode="singleTask" ensures that the latest instance
-        // of the Activity will be reachable from the Launcher.  However, a
-        // naive Intent can still overwrite the task, so we track down the
-        // existing task by pretending to be the Launcher.
-        PendingIntent contentIntent = PendingIntent.getActivity(
-                this,
-                0,
-                new Intent(this, ChromaDoze.class)
-                        .setAction(Intent.ACTION_MAIN)
-                        .addCategory(Intent.CATEGORY_LAUNCHER),
-                0);
-
-        Notification n = new NotificationCompat.Builder(this)
+    private Notification makeNotify(boolean preview) {
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_bars)
                 .setWhen(0)
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.notification_text))
-                .setContentIntent(contentIntent)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .build();
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
-        // Add a Stop button to the Notification bar.  Not trying to support
-        // this pre-ICS, because the click detection and styling are weird.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            addButtonToNotification(n);
+        // We actually build the Notification twice:
+        // 1. With preview=true (recursively), to extract its RemoteViews.
+        // 2. With preview=false, using a ContentView assembled from the preview.
+        if (!preview) {
+            // android:launchMode="singleTask" ensures that the latest instance
+            // of the Activity will be reachable from the Launcher.  However, a
+            // naive Intent can still overwrite the task, so we track down the
+            // existing task by pretending to be the Launcher.
+            b.setContentIntent(PendingIntent.getActivity(
+                    this,
+                    0,
+                    new Intent(this, ChromaDoze.class)
+                            .setAction(Intent.ACTION_MAIN)
+                            .addCategory(Intent.CATEGORY_LAUNCHER),
+                    0));
+
+            // Add a Stop button to the Notification bar.
+            b.setCustomContentView(addButtonToNotification(makeNotify(true)));
         }
-        return n;
+
+        return b.build();
     }
 
-    private void addButtonToNotification(Notification n) {
+    private RemoteViews addButtonToNotification(Notification n) {
         // Create a new RV with a Stop button.
         RemoteViews rv = new RemoteViews(
                 getPackageName(), R.layout.notification_with_stop_button);
@@ -200,20 +218,28 @@ public class NoiseService extends Service {
         rv.setOnClickPendingIntent(R.id.stop_button, pendingIntent);
 
         // Pre-render the original RV, and copy some of the colors.
-        final View inflated = n.contentView.apply(this, new FrameLayout(this));
+        RemoteViews oldRV = getContentView(this, n);
+        final View inflated = oldRV.apply(this, new FrameLayout(this));
         final TextView titleText = findTextView(inflated, getString(R.string.app_name));
         final TextView defaultText = findTextView(inflated, getString(R.string.notification_text));
         rv.setInt(R.id.divider, "setBackgroundColor", defaultText.getTextColors().getDefaultColor());
         rv.setInt(R.id.stop_button_square, "setBackgroundColor", titleText.getTextColors().getDefaultColor());
 
         // Insert a copy of the original RV into the new one.
-        rv.addView(R.id.notification_insert, n.contentView.clone());
-
-        // Splice everything back into the original's root view.
-        int id = Resources.getSystem().getIdentifier("status_bar_latest_event_content", "id", "android");
-        n.contentView.removeAllViews(id);
-        n.contentView.addView(id, rv);
+        rv.addView(R.id.notification_insert, oldRV.clone());
+        
+        return rv;
     }
+
+    private static RemoteViews getContentView(Context context, Notification n) {
+        if (n.contentView != null) {
+            return n.contentView;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return Notification.Builder.recoverBuilder(context, n).createContentView();
+        }
+        throw new IllegalStateException("Failed to build a ContentView");
+    }
+
 
     private static TextView findTextView(View view, String title) {
         if (view instanceof TextView) {
@@ -272,7 +298,12 @@ public class NoiseService extends Service {
     }
 
     public static void stopNow(Context ctx, int stopReasonId) {
-        ctx.startService(newStopIntent(ctx, stopReasonId));
+        try {
+            ctx.startService(newStopIntent(ctx, stopReasonId));
+        } catch (IllegalStateException e) {
+            // This can be triggered by running "adb shell input keyevent 86" when the app
+            // is not running.  We ignore it, because in that case there's nothing to stop.
+        }
     }
 
     private static void saveStopReason(int stopReasonId) {
