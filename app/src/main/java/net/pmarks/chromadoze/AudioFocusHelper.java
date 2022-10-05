@@ -29,14 +29,12 @@ class AudioFocusHelper implements OnAudioFocusChangeListener {
     private final Context mContext;
     private final SampleShuffler.VolumeListener mVolumeListener;
     private final AudioManager mAudioManager;
-    private final ComponentName mRemoteControlReceiver;
     private boolean mActive = false;
 
     public AudioFocusHelper(Context ctx, SampleShuffler.VolumeListener volumeListener) {
         mContext = ctx;
         mVolumeListener = volumeListener;
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-        mRemoteControlReceiver = new ComponentName(mContext, MediaButtonReceiver.class);
     }
 
     public void setActive(boolean active) {
@@ -52,15 +50,11 @@ class AudioFocusHelper implements OnAudioFocusChangeListener {
     }
 
     private void requestFocus() {
-        // In theory, the media buttons could be controlled independently, but
-        // this is convenient because they both require API 8.
-        mAudioManager.registerMediaButtonEventReceiver(mRemoteControlReceiver);
         // I'm too lazy to check the return value.
         mAudioManager.requestAudioFocus(this, AudioParams.STREAM_TYPE, AudioManager.AUDIOFOCUS_GAIN);
     }
 
     private void abandonFocus() {
-        mAudioManager.unregisterMediaButtonEventReceiver(mRemoteControlReceiver);
         mAudioManager.abandonAudioFocus(this);
     }
 
