@@ -18,24 +18,24 @@
 package net.pmarks.chromadoze;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.PowerManager;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 
+import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -86,21 +86,20 @@ public class NoiseService extends Service {
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "chromadoze:NoiseService");
         mWakeLock.acquire();
 
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.channel_name);
-            String description = getString(R.string.channel_description);
-            int importance = NotificationManager.IMPORTANCE_LOW;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
+        final CharSequence name = getString(R.string.channel_name);
+        final String description = getString(R.string.channel_description);
+        final int importance = NotificationManagerCompat.IMPORTANCE_LOW;
+        NotificationManagerCompat.from(this).createNotificationChannel(
+                new NotificationChannelCompat.Builder(CHANNEL_ID, importance)
+                        .setName(name)
+                        .setDescription(description)
+                        .build());
 
-        startForeground(NOTIFY_ID, makeNotify(false));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFY_ID, makeNotify(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFY_ID, makeNotify());
+        }
 
         // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
         mAudioFocusHelper = new AudioFocusHelper(
@@ -175,88 +174,40 @@ public class NoiseService extends Service {
     }
 
     // Create an icon for the notification bar.
-    private Notification makeNotify(boolean preview) {
+    private Notification makeNotify() {
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_bars)
                 .setWhen(0)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText(getString(R.string.notification_text))
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-        // We actually build the Notification twice:
-        // 1. With preview=true (recursively), to extract its RemoteViews.
-        // 2. With preview=false, using a ContentView assembled from the preview.
-        if (!preview) {
-            // android:launchMode="singleTask" ensures that the latest instance
-            // of the Activity will be reachable from the Launcher.  However, a
-            // naive Intent can still overwrite the task, so we track down the
-            // existing task by pretending to be the Launcher.
-            b.setContentIntent(PendingIntent.getActivity(
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setContentIntent(PendingIntent.getActivity(
                     this,
                     0,
                     new Intent(this, ChromaDoze.class)
                             .setAction(Intent.ACTION_MAIN)
                             .addCategory(Intent.CATEGORY_LAUNCHER),
-                    0));
+                    PendingIntent.FLAG_IMMUTABLE));
 
-            // Add a Stop button to the Notification bar.
-            b.setCustomContentView(addButtonToNotification(makeNotify(true)));
-        }
-
-        return b.build();
-    }
-
-    private RemoteViews addButtonToNotification(Notification n) {
-        // Create a new RV with a Stop button.
         RemoteViews rv = new RemoteViews(
                 getPackageName(), R.layout.notification_with_stop_button);
         PendingIntent pendingIntent = PendingIntent.getService(
                 this,
                 0,
                 newStopIntent(this, R.string.stop_reason_notification),
-                PendingIntent.FLAG_CANCEL_CURRENT);
+                PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         rv.setOnClickPendingIntent(R.id.stop_button, pendingIntent);
 
-        // Pre-render the original RV, and copy some of the colors.
-        RemoteViews oldRV = getContentView(this, n);
-        final View inflated = oldRV.apply(this, new FrameLayout(this));
-        final TextView titleText = findTextView(inflated, getString(R.string.app_name));
-        final TextView defaultText = findTextView(inflated, getString(R.string.notification_text));
-        rv.setInt(R.id.divider, "setBackgroundColor", defaultText.getTextColors().getDefaultColor());
+        // Temporarily inflate the notification, to copy colors from its default style.
+        final View inflated = rv.apply(this, new FrameLayout(this));
+        final TextView titleText = inflated.findViewById(R.id.title);
+        rv.setInt(R.id.divider, "setBackgroundColor", titleText.getTextColors().getDefaultColor());
         rv.setInt(R.id.stop_button_square, "setBackgroundColor", titleText.getTextColors().getDefaultColor());
 
-        // Insert a copy of the original RV into the new one.
-        rv.addView(R.id.notification_insert, oldRV.clone());
-        
-        return rv;
-    }
+        // It would be nice if there were some way to omit the "expander affordance",
+        // but this seems good enough.
+        b.setCustomContentView(rv);
+        b.setStyle(new NotificationCompat.DecoratedCustomViewStyle());
 
-    private static RemoteViews getContentView(Context context, Notification n) {
-        if (n.contentView != null) {
-            return n.contentView;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return Notification.Builder.recoverBuilder(context, n).createContentView();
-        }
-        throw new IllegalStateException("Failed to build a ContentView");
-    }
-
-
-    private static TextView findTextView(View view, String title) {
-        if (view instanceof TextView) {
-            TextView text = (TextView) view;
-            if (text.getText().equals(title)) {
-                return text;
-            }
-        } else if (view instanceof ViewGroup) {
-            ViewGroup vg = (ViewGroup) view;
-            for (int i = 0; i < vg.getChildCount(); i++) {
-                TextView found = findTextView(vg.getChildAt(i), title);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-        return null;
+        return b.build();
     }
 
     // Call updatePercent() from any thread.
