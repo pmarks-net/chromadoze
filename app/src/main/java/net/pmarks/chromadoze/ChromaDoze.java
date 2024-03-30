@@ -20,9 +20,13 @@ package net.pmarks.chromadoze;
 import android.app.backup.BackupManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BlendMode;
+import android.graphics.BlendModeColorFilter;
+import android.graphics.PorterDuff;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -169,12 +173,21 @@ public class ChromaDoze extends AppCompatActivity implements
         supportInvalidateOptionsMenu();
     }
 
+    @SuppressWarnings("deprecation")
+    private static void setColorFilterCompat(Drawable drawable, int color, PorterDuff.Mode mode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            drawable.setColorFilter(new BlendModeColorFilter(color, BlendMode.valueOf(mode.name())));
+        } else {
+            drawable.setColorFilter(color, mode);
+        }
+    }
+
     // Get the lock icon which reflects the current action.
     private Drawable getLockIcon() {
         Drawable d = ContextCompat.getDrawable(this, mUiState.getLocked() ?
                 R.drawable.action_unlock : R.drawable.action_lock);
         if (mUiState.getLockBusy()) {
-            d.setColorFilter(0xFFFF4444, Mode.SRC_IN);
+            setColorFilterCompat(d, 0xFFFF4444, Mode.SRC_IN);
         } else {
             d.clearColorFilter();
         }

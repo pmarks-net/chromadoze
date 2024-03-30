@@ -76,8 +76,8 @@ public class MemoryFragment extends ListFragment implements
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         mUiState = ((ChromaDoze) getActivity()).getUIState();
 
         mAdapter = new MemoryArrayAdapter(getActivity(), mUiState.mSavedPhonons);

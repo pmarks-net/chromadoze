@@ -18,6 +18,7 @@
 package net.pmarks.chromadoze;
 
 import android.media.AudioTrack;
+import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
@@ -610,6 +611,15 @@ class SampleShuffler {
             }
         }
 
+        @SuppressWarnings("deprecation")
+        private void setVolumeCompat(AudioTrack mTrack, float v) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mTrack.setVolume(v);
+            } else {
+                mTrack.setStereoVolume(v, v);
+            }
+        }
+
         private void setVolumeInternal() {
             float v;
             switch (mDuckLevel) {
@@ -625,7 +635,7 @@ class SampleShuffler {
                 default:
                     throw new IllegalArgumentException("Invalid DuckLevel: " + mDuckLevel);
             }
-            mTrack.setStereoVolume(v, v);
+            setVolumeCompat(mTrack, v);
         }
 
         @Override

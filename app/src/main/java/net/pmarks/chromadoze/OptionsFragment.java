@@ -61,8 +61,8 @@ public class OptionsFragment extends Fragment implements OnSeekBarChangeListener
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         mUiState = ((ChromaDoze) getActivity()).getUIState();
         final Phonon ph = mUiState.getPhonon();
 

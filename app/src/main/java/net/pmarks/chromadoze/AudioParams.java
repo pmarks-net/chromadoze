@@ -1,8 +1,12 @@
 package net.pmarks.chromadoze;
 
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 
 class AudioParams {
     final static int STREAM_TYPE = AudioManager.STREAM_MUSIC;
@@ -23,10 +27,34 @@ class AudioParams {
         BUF_SAMPLES = BUF_BYTES / BYTES_PER_SAMPLE;
     }
 
-    AudioTrack makeAudioTrack() {
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    static AudioAttributes makeAudioAttributes() {
+        return new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build();
+    }
+
+    @SuppressWarnings("deprecation")
+    private AudioTrack makeAudioTrackLegacy() {
         return new AudioTrack(
                 STREAM_TYPE, SAMPLE_RATE, CHANNEL_CONFIG,
                 AUDIO_FORMAT, BUF_BYTES, AudioTrack.MODE_STREAM);
     }
 
+    AudioTrack makeAudioTrack() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            return new AudioTrack(makeAudioAttributes(),
+                    new AudioFormat.Builder()
+                            .setSampleRate(SAMPLE_RATE)
+                            .setChannelMask(CHANNEL_CONFIG)
+                            .setEncoding(AUDIO_FORMAT)
+                            .build(),
+                    BUF_BYTES,
+                    AudioTrack.MODE_STREAM,
+                    AudioManager.AUDIO_SESSION_ID_GENERATE);
+        } else {
+            return makeAudioTrackLegacy();
+        }
+    }
 }

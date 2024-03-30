@@ -26,8 +26,10 @@ import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
+import android.os.Parcelable;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
@@ -66,6 +68,11 @@ public class NoiseService extends Service {
     private Handler mPercentHandler;
 
     private static class PercentHandler extends Handler {
+
+        PercentHandler() {
+            super(Looper.getMainLooper());
+        }
+
         @Override
         public void handleMessage(Message msg) {
             if (msg.what != PERCENT_MSG) {
@@ -76,6 +83,7 @@ public class NoiseService extends Service {
     }
 
     @Override
+    @SuppressWarnings("WakelockTimeout")
     public void onCreate() {
         // Set up a message handler in the main thread.
         mPercentHandler = new PercentHandler();
@@ -106,6 +114,24 @@ public class NoiseService extends Service {
                 getApplicationContext(), mSampleShuffler.getVolumeListener());
     }
 
+    @SuppressWarnings("deprecation")
+    private static <T extends Parcelable> T getParcelableExtraCompat(Intent intent, String name, Class<T> clazz) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return intent.getParcelableExtra(name, clazz);
+        } else {
+            return intent.getParcelableExtra(name);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void stopForegroundCompat() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // When multiple spectra arrive, only the latest should remain active.
@@ -127,7 +153,7 @@ public class NoiseService extends Service {
             saveStopReason(R.string.stop_reason_restarted);
         }
 
-        SpectrumData spectrum = intent.getParcelableExtra("spectrum");
+        SpectrumData spectrum = getParcelableExtraCompat(intent, "spectrum", SpectrumData.class);
 
         // Synchronous updates.
         mSampleShuffler.setAmpWave(
@@ -163,7 +189,7 @@ public class NoiseService extends Service {
         mPercentHandler.removeMessages(PERCENT_MSG);
         updatePercent(-1);
         mAudioFocusHelper.setActive(false);
-        stopForeground(true);
+        stopForegroundCompat();
         mWakeLock.release();
     }
 

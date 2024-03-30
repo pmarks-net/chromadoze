@@ -19,8 +19,10 @@ package net.pmarks.chromadoze;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
+import android.os.Build;
 
 // This file keeps track of AudioFocus events.
 // http://developer.android.com/training/managing-audio/audio-focus.html
@@ -30,11 +32,20 @@ class AudioFocusHelper implements OnAudioFocusChangeListener {
     private final SampleShuffler.VolumeListener mVolumeListener;
     private final AudioManager mAudioManager;
     private boolean mActive = false;
+    private AudioFocusRequest mRequest;
 
     public AudioFocusHelper(Context ctx, SampleShuffler.VolumeListener volumeListener) {
         mContext = ctx;
         mVolumeListener = volumeListener;
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // For Android Oreo (API 26) and above
+            mRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(AudioParams.makeAudioAttributes())
+                    .setOnAudioFocusChangeListener(this)
+                    .build();
+        }
     }
 
     public void setActive(boolean active) {
@@ -49,13 +60,23 @@ class AudioFocusHelper implements OnAudioFocusChangeListener {
         mActive = active;
     }
 
+    @SuppressWarnings("deprecation")
     private void requestFocus() {
         // I'm too lazy to check the return value.
-        mAudioManager.requestAudioFocus(this, AudioParams.STREAM_TYPE, AudioManager.AUDIOFOCUS_GAIN);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mAudioManager.requestAudioFocus(mRequest);
+        } else {
+            mAudioManager.requestAudioFocus(this, AudioParams.STREAM_TYPE, AudioManager.AUDIOFOCUS_GAIN);
+        }
     }
 
+    @SuppressWarnings("deprecation")
     private void abandonFocus() {
-        mAudioManager.abandonAudioFocus(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mAudioManager.abandonAudioFocusRequest(mRequest);
+        } else {
+            mAudioManager.abandonAudioFocus(this);
+        }
     }
 
     @Override
