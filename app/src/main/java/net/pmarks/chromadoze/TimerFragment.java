@@ -60,6 +60,26 @@ public class TimerFragment extends Fragment {
         updateText(timer.getRemainingTime(), timer.isRunning()); // Initial UI update
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        timer.setTickCallback(() -> {
+            updateText(timer.getRemainingTime(), true);
+        });
+
+        timer.setCompleteCallback(() -> {
+            updateText(0, false);
+            NoiseService.stopNow(requireActivity().getApplication(), R.string.stop_reason_timer);
+        });
+
+        timer.setStopCallback(() -> {
+            updateText(0, false);
+        });
+
+        ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_TIMER);
+    }
+
     private void setupTimerButtons() {
         mMinus1.setOnClickListener(v -> changeTimerDuration(-1));
         mMinus5.setOnClickListener(v -> changeTimerDuration(-5));
@@ -101,30 +121,5 @@ public class TimerFragment extends Fragment {
             mStartStop.setText("Start");
             mTimeSubheading.setText("Minutes");
         }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        timer.setTickCallback(() -> {
-            updateText(timer.getRemainingTime(), true);
-        });
-
-        timer.setCompleteCallback(() -> {
-            updateText(0, false);
-            NoiseService.stopNow(requireActivity().getApplication(), R.string.stop_reason_timer);
-        });
-
-        timer.setStopCallback(() -> {
-            updateText(0, false);
-        });
-
-        ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_TIMER);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
     }
 }
