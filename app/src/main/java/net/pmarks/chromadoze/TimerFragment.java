@@ -70,8 +70,10 @@ public class TimerFragment extends Fragment implements TimerListener {
     }
 
     private void changeTimerDuration(int minutes) {
-        timer.changeDuration(minutes * 60);
-        updateText(timer.getRemainingTime());
+        if (!timer.isRunning()) {
+            timer.changeDuration(minutes * 60);
+            updateText(timer.getRemainingTime());
+        }
     }
 
     private void setupStartButton() {
