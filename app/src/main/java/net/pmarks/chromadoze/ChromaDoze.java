@@ -312,6 +312,8 @@ public class ChromaDoze extends AppCompatActivity implements
             case FragmentIndex.ID_ABOUT:
                 changeFragment(new AboutFragment(), true);
                 return;
+            case FragmentIndex.ID_TIMER:
+                changeFragment(new TimerFragment(), true);
         }
     }
 
