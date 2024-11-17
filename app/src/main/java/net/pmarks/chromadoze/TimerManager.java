@@ -29,7 +29,11 @@ public class TimerManager {
     private int remainingTime = 0; // Time in seconds
     private boolean isRunning = false;
     private Runnable timerRunnable;
-    private final List<TimerListener> listeners = new ArrayList<>(); // Store listeners
+
+    // Lambdas for custom callbacks
+    private Runnable tickCallback;
+    private Runnable stopCallback;
+    private Runnable completeCallback;
 
     private TimerManager() {
     }
@@ -51,11 +55,11 @@ public class TimerManager {
             public void run() {
                 if (remainingTime > 0) {
                     remainingTime--;
-                    notifyTickListeners();
+                    if (tickCallback != null) tickCallback.run();
                     timerHandler.postDelayed(this, 1000);
                 } else {
                     stopTimer();
-                    notifyCompleteListeners();
+                    if (completeCallback != null) completeCallback.run();
                 }
             }
         };
@@ -66,34 +70,28 @@ public class TimerManager {
     public void stopTimer() {
         isRunning = false;
         timerHandler.removeCallbacks(timerRunnable);
+        if (stopCallback != null) stopCallback.run();
     }
 
-    public void addListener(TimerListener listener) {
-        if (!listeners.contains(listener)) listeners.add(listener);
+    public void setTickCallback(Runnable callback) {
+        this.tickCallback = callback;
     }
 
-    public void removeListener(TimerListener listener) {
-        listeners.remove(listener);
+    public void setStopCallback(Runnable callback) {
+        this.stopCallback = callback;
     }
 
-    private void notifyTickListeners() {
-        for (TimerListener listener : listeners) {
-            listener.onTimerTick(remainingTime);
-        }
-    }
-
-    private void notifyCompleteListeners() {
-        for (TimerListener listener : listeners) {
-            listener.onTimerComplete();
-        }
+    public void setCompleteCallback(Runnable callback) {
+        this.completeCallback = callback;
     }
 
     public boolean isRunning() {
         return isRunning;
     }
 
-    public void changeDuration(int delta) {
+    public int changeDuration(int delta) {
         duration = Math.max(60, duration + delta); // Minimum duration of 1 minute
+        return duration;
     }
 
     public int getDuration() {

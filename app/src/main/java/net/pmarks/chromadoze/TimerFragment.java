@@ -28,7 +28,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
-public class TimerFragment extends Fragment implements TimerListener {
+public class TimerFragment extends Fragment {
     private TextView mDurationText;
     private TextView mTimeSubheading;
     private Button mMinus1, mMinus5, mMinus10, mPlus1, mPlus5, mPlus10, mStartStop;
@@ -57,7 +57,7 @@ public class TimerFragment extends Fragment implements TimerListener {
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        updateText(timer.getRemainingTime()); // Initial UI update
+        updateText(timer.getRemainingTime(), timer.isRunning()); // Initial UI update
     }
 
     private void setupTimerButtons() {
@@ -71,8 +71,7 @@ public class TimerFragment extends Fragment implements TimerListener {
 
     private void changeTimerDuration(int minutes) {
         if (!timer.isRunning()) {
-            timer.changeDuration(minutes * 60);
-            updateText(timer.getRemainingTime());
+            updateText(timer.changeDuration(minutes * 60), false);
         }
     }
 
@@ -83,15 +82,15 @@ public class TimerFragment extends Fragment implements TimerListener {
     private void startStopTimer() {
         if (timer.isRunning()) {
             timer.stopTimer();
-            updateText(0);
+            updateText(0, false);
         } else {
             timer.startTimer(timer.getDuration());
         }
     }
 
     @SuppressLint("DefaultLocale")
-    private void updateText(int remainingTime) {
-        if (timer.isRunning()) {
+    private void updateText(int remainingTime, boolean running) {
+        if (running) {
             int minutes = remainingTime / 60;
             int seconds = remainingTime % 60;
             mDurationText.setText(String.format("%d:%02d", minutes, seconds));
@@ -105,26 +104,27 @@ public class TimerFragment extends Fragment implements TimerListener {
     }
 
     @Override
-    public void onTimerTick(int remainingTime) {
-        updateText(remainingTime); // Update UI every tick
-    }
-
-    @Override
-    public void onTimerComplete() {
-        updateText(0); // Reset UI on timer finish
-        NoiseService.stopNow(requireActivity().getApplication(), R.string.stop_reason_timer);
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
-        timer.addListener(this); // Register as a listener
+
+        timer.setTickCallback(() -> {
+            updateText(timer.getRemainingTime(), true);
+        });
+
+        timer.setCompleteCallback(() -> {
+            updateText(0, false);
+            NoiseService.stopNow(requireActivity().getApplication(), R.string.stop_reason_timer);
+        });
+
+        timer.setStopCallback(() -> {
+            updateText(0, false);
+        });
+
         ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_TIMER);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        timer.removeListener(this); // Deregister as a listener
     }
 }
