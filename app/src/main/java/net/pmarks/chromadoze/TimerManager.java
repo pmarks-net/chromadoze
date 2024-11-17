@@ -17,8 +17,6 @@
 
 package net.pmarks.chromadoze;
 
-import static java.lang.Math.max;
-
 import android.os.Handler;
 import java.util.ArrayList;
 import java.util.List;
