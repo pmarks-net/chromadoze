@@ -35,8 +35,7 @@ public class TimerFragment extends Fragment implements TimerListener {
     private final TimerManager timer = TimerManager.getInstance();
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.timer_fragment, container, false);
 
         mDurationText = v.findViewById(R.id.DurationText);

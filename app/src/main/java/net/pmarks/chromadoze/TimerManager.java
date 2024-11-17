@@ -18,6 +18,7 @@
 package net.pmarks.chromadoze;
 
 import android.os.Handler;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,8 @@ public class TimerManager {
     private Runnable timerRunnable;
     private final List<TimerListener> listeners = new ArrayList<>(); // Store listeners
 
-    private TimerManager() {}
+    private TimerManager() {
+    }
 
     public static synchronized TimerManager getInstance() {
         if (instance == null) {
