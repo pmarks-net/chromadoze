@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Paul Marks  http://www.pmarks.net/
+// Copyright (C) 2024  Paul Marks  http://www.pmarks.net/
 //
 // This file is part of Chroma Doze.
 //
