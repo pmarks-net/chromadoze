@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Chroma Doze</string>
-    <string name="notification_text">Chroma Doze is running</string>
+    <string name="app_name">ChromaDoze</string>
+    <string name="notification_text">ChromaDoze is running</string>
     <string name="about_menu">About</string>
     <string name="options">Options</string>
     <string name="generating">Generating IDCT blocks:&#160;</string>

@@ -31,7 +31,7 @@ import static java.lang.Math.ceil;
 import static java.lang.Math.log;
 import static java.lang.Math.sqrt;
 
-// For Chroma Doze, all code unrelated to the IDCT operation has been deleted.
+// For ChromaDoze, all code unrelated to the IDCT operation has been deleted.
 
 /**
  * Computes 1D Discrete Cosine Transform (DCT) of single precision data. The

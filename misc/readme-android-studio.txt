@@ -1,4 +1,4 @@
-Importing Chroma Doze into Android Studio should hopefully be trivial:
+Importing ChromaDoze into Android Studio should hopefully be trivial:
 
 - Launch Android Studio.
 - Click "Import Project (Eclipse ADT, Gradle, etc.)"

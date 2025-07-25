@@ -1,4 +1,4 @@
-Here's how I merged DragSortListView into the Chroma Doze tree:
+Here's how I merged DragSortListView into the ChromaDoze tree:
 
 - Download from here:
   https://github.com/bauerca/drag-sort-listview

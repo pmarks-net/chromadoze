@@ -1,19 +1,19 @@
 // Copyright (C) 2010  Paul Marks  http://www.pmarks.net/
 //
-// This file is part of Chroma Doze.
+// This file is part of ChromaDoze.
 //
-// Chroma Doze is free software: you can redistribute it and/or modify
+// ChromaDoze is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Chroma Doze is distributed in the hope that it will be useful,
+// ChromaDoze is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Chroma Doze.  If not, see <http://www.gnu.org/licenses/>.
+// along with ChromaDoze.  If not, see <http://www.gnu.org/licenses/>.
 
 package net.pmarks.chromadoze;
 
@@ -273,7 +273,7 @@ public class ChromaDoze extends AppCompatActivity implements
         ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
         supportInvalidateOptionsMenu();
 
-        // Use the default left arrow, or a scaled-down Chroma Doze icon.
+        // Use the default left arrow, or a scaled-down ChromaDoze icon.
         actionBar.setHomeAsUpIndicator(enableUp ? null : mToolbarIcon);
 
         // When we're on the main page, make the icon non-clickable.

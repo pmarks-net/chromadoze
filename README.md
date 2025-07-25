@@ -1,4 +1,4 @@
-Chroma Doze is an Android app that dynamically generates white/colored noise according to a frequency/amplitude spectrum sketched by the user.
+ChromaDoze is an Android app that dynamically generates white/colored noise according to a frequency/amplitude spectrum sketched by the user.
 
 It is intended to be used as a sleep sound generator.  It provides rapid feedback to adjustments in the spectrum, and is designed to minimize CPU usage in the steady state.
 

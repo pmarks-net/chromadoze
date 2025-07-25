@@ -29,7 +29,7 @@ package org.jtransforms.utils;
 import static java.lang.Math.sin;
 import static java.lang.Math.cos;
 
-// For Chroma Doze, all code unrelated to the IDCT operation has been deleted.
+// For ChromaDoze, all code unrelated to the IDCT operation has been deleted.
 
 /**
  * Static utility methods.
