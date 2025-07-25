@@ -19,14 +19,8 @@ package net.pmarks.chromadoze;
 
 import android.app.backup.BackupManager;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BlendMode;
-import android.graphics.BlendModeColorFilter;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuff.Mode;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -36,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Spinner;
 
@@ -43,12 +38,17 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.MenuItemCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import java.util.Date;
+import java.util.Objects;
 
 public class ChromaDoze extends AppCompatActivity implements
         NoiseService.PercentListener, UIState.LockListener, OnItemSelectedListener {
@@ -69,21 +69,40 @@ public class ChromaDoze extends AppCompatActivity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.main);
+
+        // Prevent system UI from drawing over the app on SDK 35+.
+        View mainContainer = findViewById(R.id.main_container);
+        ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, windowInsets) -> {
+            Insets systemBarInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBarInsets.left, systemBarInsets.top, systemBarInsets.right, systemBarInsets.bottom);
+            return windowInsets;
+        });
 
         mUiState = new UIState(getApplication());
 
         SharedPreferences pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         mUiState.loadState(pref);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ActionBar actionBar = getSupportActionBar();
+        // With Gesture Navigation enabled, Android steals swipe events from the
+        // left and right edges, so we need to add padding there.
+        // Note for users: if you don't like the padding, use 3-button navigation.
+        FrameLayout gesturePadding = findViewById(R.id.gesture_padding);
+        ViewCompat.setOnApplyWindowInsetsListener(gesturePadding, (v, windowInsets) -> {
+            Insets gestureInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemGestures());
+            v.setPadding(gestureInsets.left, 0, gestureInsets.right, 0);
+            return windowInsets;
+        });
+
+        ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setTitle("");
 
-        mNavSpinner = (Spinner) findViewById(R.id.nav_spinner);
+        mNavSpinner = findViewById(R.id.nav_spinner);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 actionBar.getThemedContext(), R.layout.spinner_title,
                 FragmentIndex.getStrings(this));
@@ -96,7 +115,6 @@ public class ChromaDoze extends AppCompatActivity implements
         {
             TypedValue tv = new TypedValue();
             getTheme().resolveAttribute(R.attr.actionBarSize, tv, true);
-            int height = TypedValue.complexToDimensionPixelSize(tv.data, getResources().getDisplayMetrics());
             // This originally used a scaled-down launcher icon, but I don't feel like figuring
             // out how to render R.mipmap.chromadoze_icon correctly.
             mToolbarIcon = ContextCompat.getDrawable(this, R.drawable.toolbar_icon);
@@ -135,7 +153,7 @@ public class ChromaDoze extends AppCompatActivity implements
         SharedPreferences.Editor pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
         pref.clear();
         mUiState.saveState(pref);
-        pref.commit();
+        pref.apply();
         new BackupManager(this).dataChanged();
 
         // Stop receiving progress events.
@@ -172,27 +190,19 @@ public class ChromaDoze extends AppCompatActivity implements
         // Redraw the lock icon for both event types.
         supportInvalidateOptionsMenu();
     }
-
-    @SuppressWarnings("deprecation")
-    private static void setColorFilterCompat(Drawable drawable, int color, PorterDuff.Mode mode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            drawable.setColorFilter(new BlendModeColorFilter(color, BlendMode.valueOf(mode.name())));
-        } else {
-            drawable.setColorFilter(color, mode);
-        }
-    }
-
     // Get the lock icon which reflects the current action.
     private Drawable getLockIcon() {
-        Drawable d = ContextCompat.getDrawable(this, mUiState.getLocked() ?
-                R.drawable.action_unlock : R.drawable.action_lock);
+        Drawable d = Objects.requireNonNull(
+                ContextCompat.getDrawable(this, mUiState.getLocked() ?
+                        R.drawable.action_unlock : R.drawable.action_lock));
         if (mUiState.getLockBusy()) {
-            setColorFilterCompat(d, 0xFFFF4444, Mode.SRC_IN);
-        } else {
-            d.clearColorFilter();
+            d = DrawableCompat.wrap(d).mutate();
+            DrawableCompat.setTint(d, 0xFFFF4444);
+            DrawableCompat.setTintMode(d, PorterDuff.Mode.SRC_IN);
         }
         return d;
     }
+
 
     @Override
     public boolean onSupportNavigateUp() {
@@ -260,7 +270,7 @@ public class ChromaDoze extends AppCompatActivity implements
         mFragmentId = id;
 
         final boolean enableUp = id != FragmentIndex.ID_CHROMA_DOZE;
-        ActionBar actionBar = getSupportActionBar();
+        ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
         supportInvalidateOptionsMenu();
 
         // Use the default left arrow, or a scaled-down Chroma Doze icon.

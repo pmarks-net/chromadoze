@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId 'net.pmarks.chromadoze'
         minSdkVersion 14
-        targetSdkVersion 34
+        targetSdkVersion 36
     }
 
     buildTypes {

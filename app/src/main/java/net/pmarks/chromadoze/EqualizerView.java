@@ -24,7 +24,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
@@ -37,6 +36,8 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     private static final float PROJECT_X = 0.4f;
     private static final float PROJECT_Y = -0.25f;
 
+
+
     // L=light, M=medium, D=dark
     private final Paint mBarColorL[] = new Paint[BAND_COUNT];
     private final Paint mBarColorM[] = new Paint[BAND_COUNT];
@@ -45,9 +46,13 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     private final Paint mBaseColorM[] = new Paint[4];
     private final Paint mBaseColorD[] = new Paint[4];
 
+    private static final float MIN_ASPECT_RATIO = 3f/4f;  // 3:4 vertical
+    // The dimensions and top offset of the drawing area after aspect ratio correction.
+    private float mDrawTopOffset;
+
     private UIState mUiState;
 
-    private float mWidth;
+    private float mWidth = -1f;
     private float mHeight;
     private float mBarWidth;
     private float mZeroLineY;
@@ -142,6 +147,10 @@ public class EqualizerView extends android.view.View implements UIState.LockList
                 canvas.drawPath(p, mBaseColorM[baseCol]);
             }
         }
+
+        // Draw a ceiling line at the maximum bar height.
+        final float bottomOfBar = barToY(1f);
+        canvas.drawRect(mBarWidth, bottomOfBar+mBarWidth*PROJECT_Y, mWidth-mBarWidth, bottomOfBar, mBaseColorM[0]);
     }
 
     private float mLastX;
@@ -189,10 +198,16 @@ public class EqualizerView extends android.view.View implements UIState.LockList
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        mWidth = getWidth();
-        mHeight = getHeight();
+        mWidth = w;
+        mHeight = h;
+
+        // If the view is too tall, leave blank space on top.
+        final float drawHeight = Math.min(mWidth / MIN_ASPECT_RATIO, mHeight);
+        mDrawTopOffset = Math.max(0, mHeight - drawHeight);
+
         mBarWidth = mWidth / (BAND_COUNT + 2);
-        mZeroLineY = mHeight * .9f;
+        // mZeroLineY is the absolute Y coordinate of the baseline the bars rest on.
+        mZeroLineY = mDrawTopOffset + drawHeight * .9f;
         mCubeTop = projectCube(mBarWidth, true);
         mCubeSide = projectCube(mBarWidth, false);
     }
@@ -218,7 +233,10 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     }
 
     private float yToBar(float y) {
-        float barHeight = 1f - (y / (mZeroLineY - mBarWidth));
+        if (mWidth < 0) throw new IllegalStateException("onSizeChanged not called");
+        final float topSpace = Math.max(mBarWidth * -PROJECT_Y, mDrawTopOffset);
+        final float totalRange = mZeroLineY - mBarWidth - topSpace;
+        float barHeight = 1f - (y - topSpace) / totalRange;
         if (barHeight < 0) {
             return 0;
         }
@@ -229,7 +247,10 @@ public class EqualizerView extends android.view.View implements UIState.LockList
     }
 
     private float barToY(float barHeight) {
-        return (1f - barHeight) * (mZeroLineY - mBarWidth);
+        if (mWidth < 0) throw new IllegalStateException("onSizeChanged not called");
+        final float topSpace = Math.max(mBarWidth * -PROJECT_Y, mDrawTopOffset);
+        final float totalRange = mZeroLineY - mBarWidth - topSpace;
+        return topSpace + (1f - barHeight) * totalRange;
     }
 
     // Accepts 0 <= barIndex < BAND_COUNT,
