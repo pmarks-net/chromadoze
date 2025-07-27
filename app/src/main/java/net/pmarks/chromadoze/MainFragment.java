@@ -17,17 +17,22 @@
 
 package net.pmarks.chromadoze;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.text.DateFormat;
@@ -37,24 +42,49 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
     private EqualizerView mEqualizer;
     private TextView mStateText;
     private ProgressBar mPercentBar;
+    private Button mNotificationButton;
     private UIState mUiState;
+    private boolean mServiceActive;
+    private ActivityResultLauncher<String> mRequestPermission;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mRequestPermission = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(), isGranted -> {
+                    // If the user grants POST_NOTIFICATIONS with the service already running,
+                    // then tell it to refresh the Notification.
+                    if (isGranted) {
+                        if (mServiceActive) mUiState.sendToService(true);
+                    } else {
+                        Toast.makeText(getContext(), "RequestPermission failed", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.main_fragment, container, false);
 
-        mEqualizer = (EqualizerView) v.findViewById(R.id.EqualizerView);
-        mStateText = (TextView) v.findViewById(R.id.StateText);
-        mPercentBar = (ProgressBar) v.findViewById(R.id.PercentBar);
+        mEqualizer = v.findViewById(R.id.EqualizerView);
+        mStateText = v.findViewById(R.id.StateText);
+        mPercentBar = v.findViewById(R.id.PercentBar);
+        mNotificationButton = v.findViewById(R.id.EnableNotificationsButton);
         return v;
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mUiState = ((ChromaDoze) getActivity()).getUIState();
+        mUiState = ((ChromaDoze) requireActivity()).getUIState();
         mEqualizer.setUiState(mUiState);
+
+        mNotificationButton.setOnClickListener(v -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                mRequestPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        });
     }
 
     @Override
@@ -63,8 +93,18 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
         // Start receiving progress events.
         NoiseService.addPercentListener(this);
         mUiState.addLockListener(mEqualizer);
+        mNotificationButton.setVisibility(hasNotificationPermission() ? View.GONE : View.VISIBLE);
+        ((ChromaDoze) requireActivity()).setFragmentId(FragmentIndex.ID_CHROMA_DOZE);
+    }
 
-        ((ChromaDoze) getActivity()).setFragmentId(FragmentIndex.ID_CHROMA_DOZE);
+    private boolean hasNotificationPermission() {
+        // The POST_NOTIFICATIONS permission is only required on Android 13+.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(
+                    requireContext(), Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED;
+        }
+        return true;
     }
 
     @Override
@@ -77,6 +117,7 @@ public class MainFragment extends Fragment implements NoiseService.PercentListen
 
     @Override
     public void onNoiseServicePercentChange(int percent, Date stopTimestamp, int stopReasonId) {
+        mServiceActive = (percent >= 0);
         boolean showGenerating = false;
         boolean showStopReason = false;
         if (percent < 0) {

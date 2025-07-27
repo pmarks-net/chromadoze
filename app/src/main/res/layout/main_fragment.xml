@@ -31,6 +31,14 @@
         </ProgressBar>
     </LinearLayout>
 
+    <Button
+        android:id="@+id/EnableNotificationsButton"
+        android:background="@drawable/btn_default_holo_dark"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/enable_notifications"
+        android:textAllCaps="false" />
+
     <net.pmarks.chromadoze.EqualizerView
         android:id="@+id/EqualizerView"
         android:layout_width="fill_parent"

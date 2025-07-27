@@ -56,7 +56,6 @@ public class UIState {
         pref.putString("phononS", mScratchPhonon.toJSON());
         for (int i = 0; i < mSavedPhonons.size(); i++) {
             pref.putString("phonon" + i, mSavedPhonons.get(i).toJSON());
-            mSavedPhonons.get(i);
         }
         pref.putInt("activePhonon", mActivePos.getPos());
     }
@@ -71,7 +70,9 @@ public class UIState {
         // Load the scratch phonon.
         mScratchPhonon = new PhononMutable();
         if (mScratchPhonon.loadFromJSON(pref.getString("phononS", null))) {
+            // noop
         } else if (mScratchPhonon.loadFromLegacyPrefs(pref)) {
+            // noop
         } else {
             mScratchPhonon.resetToDefault();
         }
@@ -109,10 +110,15 @@ public class UIState {
     }
 
     public void sendToService() {
+        sendToService(false);
+    }
+
+    public void sendToService(boolean refreshNotification) {
         Intent intent = new Intent(mContext, NoiseService.class);
         getPhonon().writeIntent(intent);
         intent.putExtra("volumeLimit", (float) getVolumeLimit() / MAX_VOLUME);
         intent.putExtra("ignoreAudioFocus", mIgnoreAudioFocus);
+        intent.putExtra("refreshNotification", refreshNotification);
         ContextCompat.startForegroundService(mContext, intent);
         mDirty = false;
     }

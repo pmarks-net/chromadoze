@@ -103,11 +103,7 @@ public class NoiseService extends Service {
                         .setDescription(description)
                         .build());
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFY_ID, makeNotify(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        } else {
-            startForeground(NOTIFY_ID, makeNotify());
-        }
+        startForegroundOrRefreshNotification();
 
         // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
         mAudioFocusHelper = new AudioFocusHelper(
@@ -123,7 +119,14 @@ public class NoiseService extends Service {
         }
     }
 
-    @SuppressWarnings("deprecation")
+    private void startForegroundOrRefreshNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFY_ID, makeNotify(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFY_ID, makeNotify());
+        }
+    }
+
     private void stopForegroundCompat() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE);
@@ -134,6 +137,11 @@ public class NoiseService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // Call startForeground redundantly if we just got POST_NOTIFICATIONS permission.
+        if (intent.getBooleanExtra("refreshNotification", false)) {
+            startForegroundOrRefreshNotification();
+        }
+
         // When multiple spectra arrive, only the latest should remain active.
         if (lastStartId >= 0) {
             stopSelf(lastStartId);
@@ -166,6 +174,7 @@ public class NoiseService extends Service {
 
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
+
 
         // If the kernel decides to kill this process, let Android restart it
         // using the most-recent spectrum.  It's important that we call
@@ -206,12 +215,12 @@ public class NoiseService extends Service {
                 .setWhen(0)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentIntent(PendingIntent.getActivity(
-                    this,
-                    0,
-                    new Intent(this, ChromaDoze.class)
-                            .setAction(Intent.ACTION_MAIN)
-                            .addCategory(Intent.CATEGORY_LAUNCHER),
-                    PendingIntent.FLAG_IMMUTABLE));
+                        this,
+                        0,
+                        new Intent(this, ChromaDoze.class)
+                                .setAction(Intent.ACTION_MAIN)
+                                .addCategory(Intent.CATEGORY_LAUNCHER),
+                        PendingIntent.FLAG_IMMUTABLE));
 
         RemoteViews rv = new RemoteViews(
                 getPackageName(), R.layout.notification_with_stop_button);
