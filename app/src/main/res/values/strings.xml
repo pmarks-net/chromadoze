@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ChromaDoze</string>
+    <string name="copyright_line">© 2025 Paul Marks</string>
     <string name="notification_text">ChromaDoze is running</string>
     <string name="about_menu">About</string>
     <string name="options">Options</string>

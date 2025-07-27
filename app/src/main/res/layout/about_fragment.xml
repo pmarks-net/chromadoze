@@ -30,7 +30,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:paddingBottom="10sp"
-        android:text="© 2024 Paul Marks" />
+        android:text="@string/copyright_line" />
 
     <TextView
         android:layout_width="wrap_content"
