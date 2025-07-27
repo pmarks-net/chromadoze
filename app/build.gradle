@@ -19,5 +19,7 @@ android {
 }
 
 dependencies {
+    // >= 1.7.0 requires minSdkVersion 21.  Let's stay on 14 for now.
     implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.media:media:1.6.0'
 }

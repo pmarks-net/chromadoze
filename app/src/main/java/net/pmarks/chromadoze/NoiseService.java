@@ -30,6 +30,8 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.Parcelable;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
@@ -58,6 +60,7 @@ public class NoiseService extends Service {
     private SampleShuffler mSampleShuffler;
     private SampleGenerator mSampleGenerator;
     private AudioFocusHelper mAudioFocusHelper;
+    private MediaSessionCompat mMediaSession = null;
 
     private static final int NOTIFY_ID = 1;
     private PowerManager.WakeLock mWakeLock;
@@ -108,6 +111,24 @@ public class NoiseService extends Service {
         // Note: This leaks memory if I use "this" instead of "getApplicationContext()".
         mAudioFocusHelper = new AudioFocusHelper(
                 getApplicationContext(), mSampleShuffler.getVolumeListener());
+
+        // Respond to stop/pause buttons, for compatibility with sleep timer apps.
+        // Android versions before LOLLIPOP require a MediaButtonReceiver, which I don't
+        // feel like setting up for such a niche feature.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mMediaSession = new MediaSessionCompat(this, "ChromaDoze");
+            mMediaSession.setCallback(new MediaSessionCompat.Callback() {
+                @Override
+                public void onPause() {
+                    // adb shell input keyevent 85
+                    NoiseService.stopNow(getApplicationContext(), R.string.stop_reason_mediabutton);
+                }
+                @Override
+                public void onStop() {
+                    NoiseService.stopNow(getApplicationContext(), R.string.stop_reason_mediabutton);
+                }
+            });
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -169,12 +190,23 @@ public class NoiseService extends Service {
                 intent.getFloatExtra("period", -1));
         mSampleShuffler.getVolumeListener().setVolumeLevel(
                 intent.getFloatExtra("volumeLimit", -1));
-        mAudioFocusHelper.setActive(
-                !intent.getBooleanExtra("ignoreAudioFocus", false));
+
+        boolean useMediaSession = !intent.getBooleanExtra("ignoreAudioFocus", false);
+        mAudioFocusHelper.setActive(useMediaSession);
+        if (mMediaSession != null) {
+            if (useMediaSession) {
+                mMediaSession.setActive(true);
+                PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
+                        .setActions(PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_STOP)
+                        .setState(PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f);
+                mMediaSession.setPlaybackState(stateBuilder.build());
+            } else {
+                mMediaSession.setActive(false);
+            }
+        }
 
         // Background updates.
         mSampleGenerator.updateSpectrum(spectrum);
-
 
         // If the kernel decides to kill this process, let Android restart it
         // using the most-recent spectrum.  It's important that we call
@@ -198,6 +230,16 @@ public class NoiseService extends Service {
         mPercentHandler.removeMessages(PERCENT_MSG);
         updatePercent(-1);
         mAudioFocusHelper.setActive(false);
+
+        if (mMediaSession != null) {
+            PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
+                    .setActions(0)
+                    .setState(PlaybackStateCompat.STATE_STOPPED, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0.0f);
+            mMediaSession.setPlaybackState(stateBuilder.build());
+            mMediaSession.setActive(false);
+            mMediaSession.release();
+        }
+
         stopForegroundCompat();
         mWakeLock.release();
     }
