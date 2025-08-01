@@ -13,3 +13,6 @@ Screenshots:
 <img src='misc/screenshot1.png?raw=true' width='360px'>
 <img src='misc/screenshot2.png?raw=true' width='360px'>
 <img src='misc/screenshot3.png?raw=true' width='360px'>
+
+<br><br><br>
+Donate: https://liberapay.com/pmarks
