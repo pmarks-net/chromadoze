@@ -1,0 +1,9 @@
+ChromaDoze
+Copyright (C) 2010-2025 Paul Marks https://pmarks.net
+
+This software is licensed under the GNU General Public License v3.
+A copy of the full license text may be found in the LICENSE file.
+
+Third-party libraries:
+- JTransforms, Copyright 2015 Piotr Wendykier
+- DragSortListView, Copyright 2013 Carl Bauer
